@@ -407,7 +407,8 @@ function updateStmtUI(){
   document.getElementById('stmtAmt').textContent = fmtNT(s.amt);
   document.getElementById('stmtYellow').textContent = fmtVoucher(s.yCnt, s.yAmt);
   document.getElementById('stmtBlue').textContent = fmtVoucher(s.bCnt, s.bAmt);
-  document.getElementById('stmtPurchase').textContent = fmtNT(s.purchase);
+  // 建全 2026-07-04：對帳單不計進貨 → 對帳單欄固定「—」（進貨只算當月）
+  document.getElementById('stmtPurchase').textContent = '—';
 }
 
 // === 當月餐券（伺服器算；本地無 fallback，未部署前顯示 --）===
@@ -918,8 +919,9 @@ function recalc(){
   document.getElementById('monthSum').textContent = fmtNT(getMonth());
   document.getElementById('monthPurchaseSum').textContent = fmtNT(getMonthPurchase());
   const mv = getMonthVouchers();
-  document.getElementById('monthYellow').textContent = serverVoucherCache ? fmtVoucher(mv.yCnt, mv.yAmt) : '--';
-  document.getElementById('monthBlue').textContent = serverVoucherCache ? fmtVoucher(mv.bCnt, mv.bAmt) : '--';
+  // 建全 2026-07-04：當月不計券 → 當月欄固定「—」（券只算對帳單）
+  document.getElementById('monthYellow').textContent = '—';
+  document.getElementById('monthBlue').textContent = '—';
   document.getElementById('monthGuestsSum').textContent = (serverGuestsCache != null) ? (getMonthGuests() + ' 餐') : '--';
   updateStmtUI();
 
@@ -1049,7 +1051,12 @@ function openFixValue(){
     { key:'guests', label:'🍽️ 總餐數', unit:'餐' },
     { key:'hours', label:'⏱️ 工時', unit:'小時' }
   ];
-  const STMT_DISABLED = { hours:1, guests:1 };   // 對帳單不記工時/餐數
+  // 建全 2026-07-04：當月不計券(黃/藍)；對帳單不計 進貨/工時/餐數
+  const MONTH_DISABLED = { yellow:1, blue:1 };
+  const STMT_DISABLED = { hours:1, guests:1, purchase:1, yellow:0, blue:0 };
+  function isDisabled(scope, key){
+    return scope==='statement' ? !!STMT_DISABLED[key] : !!MONTH_DISABLED[key];
+  }
   function curVal(){
     if (scope === 'month'){
       if (field==='amt') return serverMonthCache||0;
@@ -1102,12 +1109,12 @@ function openFixValue(){
   function paintFields(){
     fieldsBox.innerHTML = '';
     FIELDS.forEach(f=>{
-      const disabled = (scope==='statement' && STMT_DISABLED[f.key]);
+      const disabled = isDisabled(scope, f.key);
       if (disabled && field===f.key) field = 'amt';
       const b = document.createElement('button');
       b.type='button'; b.textContent=f.label; b.dataset.k=f.key;
       b.style.cssText = btnCss + ';font-size:13px;padding:9px 4px';
-      if (disabled){ b.style.opacity='.35'; b.disabled=true; b.title='對帳單不記工時/餐數'; }
+      if (disabled){ b.style.opacity='.35'; b.disabled=true; b.title = (scope==='statement' ? '對帳單不計此項' : '當月不計此項'); }
       if (f.key===field && !disabled){ b.style.background='var(--gold-soft)'; b.style.borderColor='var(--gold)'; }
       b.addEventListener('click', ()=>{ field=f.key; paintFields(); refreshCur(); });
       fieldsBox.appendChild(b);
@@ -1435,20 +1442,21 @@ function buildText(d){
   lines.push('每日營業狀況⋯⋯⋯⋯');
   lines.push('（1）營業額：' + d.dayAmt);
   lines.push('（2）餐數：' + d.guests);
-  // （3）餐券：只顯示張數、無圖示、以「、」分隔（建全 2026-07-04）
+  // （3）餐券：張數＋emoji、以「、」分隔（建全 2026-07-04 加回 emoji）
   const vParts = [];
   VOUCHERS.forEach(v=>{
     const vd = d.vouchers[v.key] || {};
-    if ((vd.count || 0) > 0) vParts.push(v.label + ' ' + (vd.count||0) + '張');
+    if ((vd.count || 0) > 0) vParts.push(v.emoji + v.label + ' ' + (vd.count||0) + '張');
   });
   lines.push('（3）餐券：' + (vParts.length ? vParts.join('、') : '無'));
-  // （4）進貨：無圖示、品項文字、以「、」分隔（例 菜500、蛋300）
+  // （4）進貨：emoji＋品項文字、以「、」分隔（例 🥬菜500、🥚蛋300）
+  const P_EMOJI = { veg:'🥬', egg:'🥚', central:'🏭' };
   const P_LABEL = { veg:'菜', egg:'蛋', central:'央廚' };
   const pParts = [];
   ['veg','egg','central'].forEach(k=>{
-    if ((d.purchases[k] || 0) > 0) pParts.push(P_LABEL[k] + d.purchases[k]);
+    if ((d.purchases[k] || 0) > 0) pParts.push(P_EMOJI[k] + P_LABEL[k] + d.purchases[k]);
   });
-  (d.purchases.others || []).forEach(o=>{ if ((o.amt||0) > 0 || o.name) pParts.push((o.name||'其他') + o.amt); });
+  (d.purchases.others || []).forEach(o=>{ if ((o.amt||0) > 0 || o.name) pParts.push('📦' + (o.name||'其他') + o.amt); });
   lines.push('（4）進貨：' + (pParts.length ? pParts.join('、') + '（合計 ' + d.dayPurchase + '）' : '無'));
   lines.push('（5）工時：' + fmtHr(d.dayHours));
   lines.push('————————————');
@@ -1463,8 +1471,6 @@ function buildText(d){
   const mGuests = (d.monthGuests || 0) + (d.guests || 0);           // 含今日
   const dayOfMonth = parseInt(String(d.iso || '').split('-')[2], 10) || 0;  // 天數＝今日日期(1號~最新)
   lines.push('💰 當月營業額：' + mAmt);
-  lines.push('🟡 當月黃券：' + fmtVoucher(mv.yCnt + (yv.count||0), mv.yAmt + (yv.amt||0)));
-  lines.push('🔵 當月藍券：' + fmtVoucher(mv.bCnt + (bv.count||0), mv.bAmt + (bv.amt||0)));
   lines.push('🛒 當月進貨：' + mPur);
   lines.push('⏱️ 當月工時：' + fmtHr(d.monthHours + d.dayHours));
   lines.push('🍽️ 日均餐數：' + (dayOfMonth > 0 ? Math.round(mGuests / dayOfMonth) : '--'));
@@ -1505,9 +1511,8 @@ function buildText(d){
   lines.push('');
   const s = d.statement || { amt:0, purchase:0, yCnt:0, yAmt:0, bCnt:0, bAmt:0 };
   lines.push('💰 累計營業額：' + (s.amt + d.dayAmt));
-  lines.push('🟡 累計黃券：' + fmtVoucher(s.yCnt + (yv.count||0), s.yAmt + (yv.amt||0)));
-  lines.push('🔵 累計藍券：' + fmtVoucher(s.bCnt + (bv.count||0), s.bAmt + (bv.amt||0)));
-  lines.push('🛒 累計進貨：' + (s.purchase + d.dayPurchase));
+  lines.push('🟡 累計黃券：' + (s.yCnt + (yv.count||0)) + '張');
+  lines.push('🔵 累計藍券：' + (s.bCnt + (bv.count||0)) + '張');
   return lines.join('\n');
 }
 
