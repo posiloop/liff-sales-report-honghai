@@ -1412,29 +1412,34 @@ function buildText(d){
   lines.push('每日營業狀況⋯⋯⋯⋯');
   lines.push('（1）營業額：' + d.dayAmt);
   lines.push('（2）餐數：' + d.guests);
+  // （3）餐券：只顯示張數，不顯示金額與加總（建全 2026-07-04）
   const vParts = [];
   VOUCHERS.forEach(v=>{
     const vd = d.vouchers[v.key] || {};
-    if ((vd.count || 0) > 0 || (vd.amt || 0) > 0) vParts.push(v.emoji + v.label + ' ' + fmtVoucher(vd.count, vd.amt));
+    if ((vd.count || 0) > 0) vParts.push(v.emoji + v.label + ' ' + (vd.count||0) + '張');
   });
-  lines.push('（3）餐券：' + (vParts.length
-    ? vParts.join(' ') + '（合計 ' + fmtVoucher(d.voucherCnt, d.voucherAmt) + '）' : '無'));
+  lines.push('（3）餐券：' + (vParts.length ? vParts.join(' ') : '無'));
+  // （4）進貨：圖示後面加品項文字（例 🥬菜500）
   const P_EMOJI = { veg:'🥬', egg:'🥚', central:'🏭' };
+  const P_LABEL = { veg:'菜', egg:'蛋', central:'央廚' };
   const pParts = [];
   ['veg','egg','central'].forEach(k=>{
-    if ((d.purchases[k] || 0) > 0) pParts.push(P_EMOJI[k] + d.purchases[k]);
+    if ((d.purchases[k] || 0) > 0) pParts.push(P_EMOJI[k] + P_LABEL[k] + d.purchases[k]);
   });
   (d.purchases.others || []).forEach(o=>{ if ((o.amt||0) > 0 || o.name) pParts.push('📦' + o.name + o.amt); });
   lines.push('（4）進貨：' + (pParts.length ? pParts.join(' ') + '（合計 ' + d.dayPurchase + '）' : '無'));
   lines.push('（5）工時：' + fmtHr(d.dayHours));
   lines.push('————————————');
-  lines.push('（6）當月營業額：' + (d.monthTotal + d.dayAmt));
+  // 當月累計（1號到月底）
   const mv = d.monthVouchers || { yCnt:0, yAmt:0, bCnt:0, bAmt:0 };
   const yv = d.vouchers.yellow || {}, bv = d.vouchers.blue || {};
-  lines.push('（7）當月餐券：🟡' + fmtVoucher(mv.yCnt + (yv.count||0), mv.yAmt + (yv.amt||0)) +
-             ' 🔵' + fmtVoucher(mv.bCnt + (bv.count||0), mv.bAmt + (bv.amt||0)));
-  lines.push('（8）當月進貨：' + (d.monthPurchase + d.dayPurchase));
-  lines.push('（9）當月總工時：' + fmtHr(d.monthHours + d.dayHours));
+  lines.push('當月累計（1號到月底）');
+  lines.push('');
+  lines.push('💰當月營業額：' + (d.monthTotal + d.dayAmt));
+  lines.push('🟡當月黃券：' + fmtVoucher(mv.yCnt + (yv.count||0), mv.yAmt + (yv.amt||0)));
+  lines.push('🔵當月藍券：' + fmtVoucher(mv.bCnt + (bv.count||0), mv.bAmt + (bv.amt||0)));
+  lines.push('🛒當月進貨：' + (d.monthPurchase + d.dayPurchase));
+  lines.push('⏱️當月工時：' + fmtHr(d.monthHours + d.dayHours));
   lines.push('');
   lines.push('出勤紀錄⋯⋯⋯⋯⋯');
   const byGroup = {};
@@ -1448,10 +1453,10 @@ function buildText(d){
     const bi = groupOrder.indexOf(b);
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
   });
-  const GROUP_EMOJI = { '支援': '🤝', '兼職': '⏱️' };
+  const GROUP_EMOJI = { '正職': '💼', '支援': '🤝', '兼職': '⏱️' };
   const SEP = '⋯⋯⋯⋯⋯⋯⋯⋯⋯';
   sortedGroups.forEach(g => {
-    if (g !== '正職'){
+    {
       const e = GROUP_EMOJI[g] || '';
       lines.push('【' + (e ? e + ' ' : '') + g + '】');
     }
@@ -1470,9 +1475,9 @@ function buildText(d){
   lines.push('（本月21號到下月20號）');
   lines.push('');
   const s = d.statement || { amt:0, purchase:0, yCnt:0, yAmt:0, bCnt:0, bAmt:0 };
-  lines.push('（1）💰累計營業額: ' + (s.amt + d.dayAmt));
-  lines.push('（2）🟡黃券：' + fmtVoucher(s.yCnt + (yv.count||0), s.yAmt + (yv.amt||0)));
-  lines.push('（3）🔵藍券：' + fmtVoucher(s.bCnt + (bv.count||0), s.bAmt + (bv.amt||0)));
+  lines.push('（1）💰累計營業額：' + (s.amt + d.dayAmt));
+  lines.push('（2）🟡累計黃券：' + fmtVoucher(s.yCnt + (yv.count||0), s.yAmt + (yv.amt||0)));
+  lines.push('（3）🔵累計藍券：' + fmtVoucher(s.bCnt + (bv.count||0), s.bAmt + (bv.amt||0)));
   lines.push('（4）🛒累計進貨：' + (s.purchase + d.dayPurchase));
   return lines.join('\n');
 }

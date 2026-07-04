@@ -1,4 +1,4 @@
-// ★ VERSION 2026-07-04b（含 對帳單 Date 修正 + 修改數值 adjust）— 貼進 Apps Script 後最上面應看到這行
+// ★ VERSION 2026-07-04c（對帳單 Date 修正 + 修改數值 adjust + ensureTab 強制 D 欄純文字防未來月份對帳單歸零）
 /**
  * 業績回報-鴻海 累積 backend (hh-v2 — 建全 2026-07-04 16:09 規格：
  * 餐券改 黃券/藍券 各自張數+金額；當月/對帳單雙軌加總含 營業額/餐券/進貨)
@@ -42,6 +42,9 @@ function ensureTab(ym) {
       sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
     }
   }
+  // ISO日期(D欄)強制純文字：Sheets 會把 "2026-07-03" 自動轉成 Date 物件，
+  // 造成 statementTotals 抓不到、對帳單恆為 0。設 @ 讓 appendRow 存字串。
+  sheet.getRange(2, 4, Math.max(1, sheet.getMaxRows() - 1), 1).setNumberFormat('@');
   return sheet;
 }
 
