@@ -1455,12 +1455,14 @@ function buildText(d){
   const P_LABEL = { veg:'菜', egg:'蛋', central:'央廚' };
   const pParts = [];
   ['veg','egg','central'].forEach(k=>{
-    if ((d.purchases[k] || 0) > 0) pParts.push(P_EMOJI[k] + P_LABEL[k] + d.purchases[k]);
+    if ((d.purchases[k] || 0) > 0) pParts.push(P_EMOJI[k] + P_LABEL[k] + ' ' + d.purchases[k]);
   });
-  (d.purchases.others || []).forEach(o=>{ if ((o.amt||0) > 0 || o.name) pParts.push('📦' + (o.name||'其他') + o.amt); });
-  lines.push('進貨：' + (pParts.length ? pParts.join('、') + '（合計 ' + d.dayPurchase + '）' : '無'));
+  (d.purchases.others || []).forEach(o=>{ if ((o.amt||0) > 0 || o.name) pParts.push('📦' + (o.name||'其他') + ' ' + o.amt); });
+  lines.push('進貨：' + (pParts.length ? pParts.join('、') : '無'));
   lines.push('工時：' + fmtHr(d.dayHours));
-  lines.push('————————————');
+  const SECTION_SEP = '■■■■■■■■■■■■■■■';   // 各大段分隔（建全 2026-07-04）
+  lines.push('');
+  lines.push(SECTION_SEP);
   // 當月累計（1號到月底）
   const mv = d.monthVouchers || { yCnt:0, yAmt:0, bCnt:0, bAmt:0 };
   const yv = d.vouchers.yellow || {}, bv = d.vouchers.blue || {};
@@ -1477,6 +1479,7 @@ function buildText(d){
   lines.push('🍽️ 日均餐數：' + (dayOfMonth > 0 ? Math.round(mGuests / dayOfMonth) : '--'));
   lines.push('📈 食材佔比：' + (mAmt > 0 ? (Math.round(mPur / mAmt * 1000) / 10).toFixed(1) + '%' : '--'));
   lines.push('');
+  lines.push(SECTION_SEP);
   lines.push('出勤紀錄⋯⋯⋯⋯⋯');
   const byGroup = {};
   d.persons.filter(p => p.name && p.name.trim()).forEach(p=>{
@@ -1506,7 +1509,9 @@ function buildText(d){
       lines.push(SEP);
     });
   });
+  if (lines[lines.length - 1] === SEP) lines.pop();   // 拿掉最後一位員工後多餘的 ⋯⋯ 分隔
   lines.push('');
+  lines.push(SECTION_SEP);
   lines.push('對帳單累計⋯⋯⋯⋯');
   lines.push('（本月21號到次月20號）');
   lines.push('');
