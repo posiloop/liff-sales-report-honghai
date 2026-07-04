@@ -101,7 +101,7 @@
   .tp-cancel{color:var(--muted);border-right:1px solid var(--line)}
   .tp-ok{color:var(--accent);font-weight:600}
   /* Person remove */
-  .person-remove{background:#fff;border:1px solid var(--warn);border-radius:14px;height:26px;padding:0 10px;font-size:12px;font-weight:700;color:var(--warn);cursor:pointer;line-height:1;white-space:nowrap}
+  .person-remove{background:transparent;border:1px solid var(--warn);border-radius:50%;width:24px;height:24px;font-size:11px;color:var(--warn);cursor:pointer;padding:0;line-height:1;flex-shrink:0}
   .purchase-other{display:flex;align-items:center;gap:6px;margin:6px 0}
   .purchase-other .po-ico{font-size:16px}
   .purchase-other input[data-pk="name"]{flex:1;min-width:0;padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit}
@@ -156,7 +156,7 @@
 
 <div class="card">
   <h2>🎫 餐券</h2>
-  <div class="small" style="margin-bottom:8px">只填當日「張數」即可（黃券 70 元／藍券 110 元，金額由系統自動計算）</div>
+  <div class="small" style="margin-bottom:8px">填寫收到張數</div>
   <div class="row"><label>🟡 黃券 70 元（張）</label><input type="number" min="0" data-voucher="yellow" data-vk="count" placeholder="0"></div>
   <div class="row"><label>🔵 藍券 110 元（張）</label><input type="number" min="0" data-voucher="blue" data-vk="count" placeholder="0"></div>
 </div>
@@ -168,7 +168,7 @@
   <div class="row"><label>🥚 蛋</label><input type="number" min="0" data-purchase="egg" placeholder="0"></div>
   <div class="row"><label>🏭 央廚</label><input type="number" min="0" data-purchase="central" placeholder="0"></div>
   <div id="purchaseOthers"></div>
-  <button id="addPurchaseOther" type="button" style="margin-top:6px">+ 其他</button>
+  <button id="addPurchaseOther" type="button" class="ot-toggle" style="margin-top:6px">＋ 其他</button>
   <div class="sum-line"><span>進貨小計</span><span class="val" id="purchaseSum">$0</span></div>
 </div>
 
@@ -658,7 +658,7 @@ function buildPersonTile(name, group, isOther, schedule){
   tile.dataset.group = group;
   if (isOther) tile.dataset.other = '1';
   // 其他人員：只留紅色 ✕（移除），不再放會旋轉成 × 的 .plus 指示器，避免出現兩個 X 造成誤點疊加（建全 2026-07-04）
-  const removeBtn = isOther ? `<button type="button" class="person-remove" title="移除">✕ 取消</button>` : '';
+  const removeBtn = isOther ? `<button type="button" class="person-remove" title="移除">✕</button>` : '';
   const plusEl = isOther ? '' : `<div class="plus">+</div>`;
   tile.innerHTML = `<div class="name">${name}</div><div style="display:flex;align-items:center;gap:6px">${removeBtn}${plusEl}</div>`;
 
