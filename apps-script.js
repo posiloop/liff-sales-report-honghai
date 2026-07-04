@@ -111,6 +111,80 @@ function deleteRow(ym, id) {
 
 function pad2_(n) { return ('0' + n).slice(-2); }
 
+// ===== 修改數值（人工調整）=====
+// 建全 2026-07-04：可直接修正「當月」或「對帳單」的 營業額/黃券/藍券/進貨/工時。
+// 存進獨立「調整」分頁（不動每日回報列），以 delta 累加方式套到累計值上。
+// 調整分頁欄位：A 時間戳 | B scope(month|statement) | C key(month=ym；statement=窗label) | D field | E value(delta；券為張數 delta)
+const ADJ_TAB = '調整';
+const VPRICE = { yellow: 70, blue: 110 };
+
+function ensureAdjTab_() {
+  const ss = SpreadsheetApp.getActive();
+  let sheet = ss.getSheetByName(ADJ_TAB);
+  if (!sheet) {
+    sheet = ss.insertSheet(ADJ_TAB);
+    sheet.getRange(1, 1, 1, 5).setValues([['時間戳', 'scope', 'key', 'field', 'value']]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// 回傳某 scope+key 下所有調整聚合值
+function adjMap_(scope, key) {
+  const out = { amt: 0, hours: 0, purchase: 0, yCnt: 0, yAmt: 0, bCnt: 0, bAmt: 0 };
+  const sheet = SpreadsheetApp.getActive().getSheetByName(ADJ_TAB);
+  if (!sheet) return out;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return out;
+  const rows = sheet.getRange(2, 2, lastRow - 1, 4).getValues();   // B..E
+  rows.forEach(function(r) {
+    if (String(r[0]) !== String(scope) || String(r[1]) !== String(key)) return;
+    const field = String(r[2]);
+    const v = Number(r[3]) || 0;
+    if (field === 'amt') out.amt += v;
+    else if (field === 'hours') out.hours += v;
+    else if (field === 'purchase') out.purchase += v;
+    else if (field === 'yellow') { out.yCnt += v; out.yAmt += v * VPRICE.yellow; }
+    else if (field === 'blue') { out.bCnt += v; out.bAmt += v * VPRICE.blue; }
+  });
+  return out;
+}
+
+// upsert：同 scope+key+field 只留一筆（覆蓋）
+function setAdjust_(scope, key, field, delta) {
+  const sheet = ensureAdjTab_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow >= 2) {
+    const rows = sheet.getRange(2, 2, lastRow - 1, 3).getValues();   // B(scope) C(key) D(field)
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i][0]) === String(scope) && String(rows[i][1]) === String(key) && String(rows[i][2]) === String(field)) {
+        sheet.getRange(i + 2, 5).setValue(delta);   // E
+        return;
+      }
+    }
+  }
+  sheet.appendRow([new Date().toISOString(), scope, key, field, delta]);
+}
+
+// 依 scope+field 取「純每日回報列」現值（不含調整），用來算 delta
+function rowsValueFor_(scope, key, field, refDate) {
+  if (scope === 'month') {
+    const t = monthTotalsFor(key);
+    if (field === 'amt') return t.monthTotal;
+    if (field === 'hours') return t.monthHours;
+    if (field === 'purchase') return t.monthPurchase;
+    if (field === 'yellow') return t.monthVouchers.yCnt;
+    if (field === 'blue') return t.monthVouchers.bCnt;
+  } else {
+    const s = statementTotals(refDate);
+    if (field === 'amt') return s.amt;
+    if (field === 'purchase') return s.purchase;
+    if (field === 'yellow') return s.yCnt;
+    if (field === 'blue') return s.bCnt;
+  }
+  return 0;
+}
+
 // 對帳窗：date 落在 [X月21號, X+1月20號] → 回窗起訖與涉及的 ym tabs
 function statementWindow(isoDate) {
   const d = new Date(isoDate + 'T00:00:00');
@@ -165,11 +239,15 @@ function newId_() { return Utilities.getUuid().slice(0, 8); }
 
 function totalsPayload_(ym, extra) {
   const t = monthTotalsFor(ym);
+  const a = adjMap_('month', ym);
   const out = extra || {};
-  out.monthTotal = t.monthTotal;
-  out.monthHours = t.monthHours;
-  out.monthPurchase = t.monthPurchase;
-  out.monthVouchers = t.monthVouchers;
+  out.monthTotal = t.monthTotal + a.amt;
+  out.monthHours = t.monthHours + a.hours;
+  out.monthPurchase = t.monthPurchase + a.purchase;
+  out.monthVouchers = {
+    yCnt: t.monthVouchers.yCnt + a.yCnt, yAmt: t.monthVouchers.yAmt + a.yAmt,
+    bCnt: t.monthVouchers.bCnt + a.bCnt, bAmt: t.monthVouchers.bAmt + a.bAmt
+  };
   return out;
 }
 
@@ -180,8 +258,11 @@ function doGet(e) {
       const dateIso = e.parameter.date;
       if (!dateIso) return _json({ ok: false, error: 'missing date' });
       const s = statementTotals(dateIso);
-      return _json({ ok: true, label: s.label, amt: s.amt, purchase: s.purchase,
-                     yCnt: s.yCnt, yAmt: s.yAmt, bCnt: s.bCnt, bAmt: s.bAmt });
+      const a = adjMap_('statement', s.label);
+      return _json({ ok: true, label: s.label,
+                     amt: s.amt + a.amt, purchase: s.purchase + a.purchase,
+                     yCnt: s.yCnt + a.yCnt, yAmt: s.yAmt + a.yAmt,
+                     bCnt: s.bCnt + a.bCnt, bAmt: s.bAmt + a.bAmt });
     }
     const ym = e.parameter.ym;
     if (!ym) return _json({ ok: false, error: 'missing ym' });
@@ -204,6 +285,36 @@ function doPost(e) {
       if (!ym || !id) return _json({ ok: false, error: 'missing ym/id' });
       const ok = deleteRow(ym, id);
       return _json(totalsPayload_(ym, { ok: ok }));
+    }
+    if (action === 'adjust') {
+      // { scope:'month'|'statement', field:'amt'|'hours'|'purchase'|'yellow'|'blue', target, ym, date }
+      const scope = String(data.scope || '');
+      const field = String(data.field || '');
+      const target = Number(data.target);
+      if ((scope !== 'month' && scope !== 'statement') || !field || isNaN(target)) {
+        return _json({ ok: false, error: 'bad adjust params' });
+      }
+      if (scope === 'statement' && field === 'hours') {
+        return _json({ ok: false, error: '對帳單不記工時' });
+      }
+      const ym = data.ym;
+      const refDate = data.date;   // ISO，用於算對帳窗與當月ym
+      const key = (scope === 'month') ? ym : statementWindow(refDate).label;
+      if (!key) return _json({ ok: false, error: 'missing key' });
+      const rowsVal = rowsValueFor_(scope, key, field, refDate);
+      const delta = target - rowsVal;   // 券為張數 delta
+      setAdjust_(scope, key, field, delta);
+      // 回傳更新後累計（含當月與對帳單）
+      const out = totalsPayload_(ym, { ok: true });
+      if (refDate) {
+        const s2 = statementTotals(refDate);
+        const a2 = adjMap_('statement', s2.label);
+        out.statement = { label: s2.label,
+          amt: s2.amt + a2.amt, purchase: s2.purchase + a2.purchase,
+          yCnt: s2.yCnt + a2.yCnt, yAmt: s2.yAmt + a2.yAmt,
+          bCnt: s2.bCnt + a2.bCnt, bAmt: s2.bAmt + a2.bAmt };
+      }
+      return _json(out);
     }
     const ym = data.ym;
     if (!ym) return _json({ ok: false, error: 'missing ym' });
