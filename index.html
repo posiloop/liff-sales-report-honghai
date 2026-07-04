@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>業績回報 - 鴻海</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root{
+    /* 益碗之間 brand palette */
+    --brand:#8F2E29;          /* deep red (益 logo) */
+    --brand-dim:#6f1f1c;
+    --gold:#D4B584;           /* tan/gold (frame) */
+    --gold-soft:#f5ecdb;
+    --bg:#fafaf6;             /* slight warm bg */
+    --card:#fff;
+    --line:#e7e3da;
+    --text:#1c1815;
+    --muted:#7a716a;
+    --accent:#0f62fe;
+    --warn:#d92d20;
+    --success:#06c755;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;padding:0 0 100px}
+  .app-header{
+    background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dim) 100%);
+    color:#fff;padding:16px 14px 22px;margin:0 0 14px;
+    border-radius:0 0 18px 18px;box-shadow:0 4px 18px rgba(143,46,41,.18);
+  }
+  .app-header h1{font-size:18px;margin:0 0 2px;font-weight:700;letter-spacing:.3px}
+  .app-header .sub{color:var(--gold-soft);font-size:13px;margin:0}
+  .container{padding:0 12px}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 2px 8px rgba(143,46,41,.04)}
+  .card h2{font-size:15px;margin:0 0 12px;color:var(--brand);font-weight:700;display:flex;align-items:center;gap:6px;border-bottom:2px solid var(--gold-soft);padding-bottom:8px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:6px 0}
+  .row label{flex:1;color:var(--muted)}
+  .row .val{font-weight:600;color:#000}
+  input[type=number]{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:130px;text-align:right;background:#fff}
+  input[type=number]:focus{outline:2px solid var(--accent);outline-offset:-2px}
+  input[type=text]{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;background:#fff}
+  .meal-tile{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;background:linear-gradient(180deg,#fff,#fafaf6);cursor:pointer;user-select:none;transition:all .15s}
+  .meal-tile:active{transform:scale(.98)}
+  .meal-tile.on{background:linear-gradient(180deg,#fff5e6,var(--gold-soft));border-color:var(--brand);box-shadow:0 2px 8px rgba(143,46,41,.12)}
+  .meal-tile .name{font-weight:600;font-size:15px}
+  .meal-tile .plus{width:30px;height:30px;border-radius:50%;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--muted);transition:all .15s}
+  .meal-tile.on .plus{background:var(--brand);color:#fff;border-color:var(--brand);transform:rotate(45deg)}
+  .meal-fields{display:none;padding:8px 0 4px}
+  .meal-tile.on + .meal-fields{display:block}
+  .sum-line{display:flex;justify-content:space-between;border-top:1px dashed var(--line);padding-top:8px;margin-top:8px;font-weight:600}
+  .sum-line .val{color:var(--brand-dim)}
+  .person-tile{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin:6px 0;background:#fff;cursor:pointer;user-select:none;transition:all .15s}
+  .person-tile:active{transform:scale(.98)}
+  .person-tile.on{background:linear-gradient(180deg,#fff,#f5ecdb);border-color:var(--gold)}
+  .person-tile .name{font-weight:600}
+  .person-tile .plus{width:28px;height:28px;border-radius:50%;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--muted);transition:all .15s}
+  .person-tile.on .plus{background:var(--brand);color:#fff;border-color:var(--brand);transform:rotate(45deg)}
+  .person-fields{display:none;padding:10px 4px 6px;background:#fff;border:1px solid var(--line);border-radius:10px;margin:-4px 0 8px}
+  .person-tile.on + .person-fields{display:block}
+  .person-fields .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .person-fields .field label{display:block;color:var(--muted);font-size:13px;margin-bottom:2px}
+  .person-fields .time-display{font-weight:600;color:#000;font-size:14px}
+  .slider-row{display:flex;align-items:center;gap:8px}
+  .slider-row input[type=range]{flex:1;accent-color:var(--accent)}
+  .grp-label{font-size:13px;color:var(--muted);margin:10px 0 4px}
+  #addOther{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:10px;color:var(--muted);width:100%;text-align:center;font:inherit;margin-top:6px}
+  .submit-bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px;display:flex;gap:10px;box-shadow:0 -2px 12px rgba(0,0,0,.05)}
+  button.primary{flex:1;background:linear-gradient(135deg,var(--brand),var(--brand-dim));color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;font:inherit;letter-spacing:.5px;box-shadow:0 4px 12px rgba(143,46,41,.25);cursor:pointer}
+  button.primary:disabled{background:#c8c8cd;box-shadow:none;cursor:not-allowed}
+  .err{color:var(--warn);font-size:13px;margin-top:4px}
+  .small{font-size:12px;color:var(--muted)}
+  .monthly-row{background:linear-gradient(135deg,var(--gold-soft),#fdf3df);border:1px solid var(--gold);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .monthly-row button,.acc-actions button{background:#fff;border:1px solid var(--brand);color:var(--brand);padding:6px 12px;border-radius:8px;font:inherit;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap}
+  .monthly-row button:active,.acc-actions button:active{transform:scale(.96)}
+  .grp-toggle{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .grp-toggle button{padding:8px;background:#fff;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s}
+  .grp-toggle button.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  .amount-override{background:transparent;border:1px solid var(--line);border-radius:8px;width:36px;height:36px;font-size:14px;cursor:pointer;flex-shrink:0}
+  .amount-override:active{background:var(--gold-soft)}
+  .pick-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .icon-btn{background:transparent;border:none;font-size:16px;cursor:pointer;padding:2px 4px;color:var(--accent)}
+  #dateInput{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:#fff}
+  button.time-wheel{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:110px;text-align:center;background:#fff;font-size:16px;cursor:pointer;color:var(--text)}
+  /* Custom wheel picker */
+  .tp-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+  .tp-sheet{background:#fff;border-radius:16px;width:100%;max-width:340px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+  .tp-title{padding:16px;text-align:center;font-weight:600;color:var(--accent);border-bottom:1px solid var(--line);font-size:16px}
+  .tp-cols{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:8px 0 0;height:236px}
+  .tp-col-label{position:absolute;top:8px;font-size:13px;color:var(--muted);text-align:center;width:50%;font-weight:500}
+  .tp-col-label:nth-child(1){left:0}.tp-col-label:nth-child(2){left:50%}
+  .tp-col{height:200px;margin-top:24px;overflow-y:scroll;scroll-snap-type:y mandatory;text-align:center;-webkit-overflow-scrolling:touch}
+  .tp-col::-webkit-scrollbar{display:none}
+  .tp-col{scrollbar-width:none}
+  .tp-item{height:40px;line-height:40px;font-size:20px;color:var(--muted);scroll-snap-align:center;font-variant-numeric:tabular-nums}
+  .tp-item.selected{color:var(--text);font-weight:600}
+  .tp-highlight{position:absolute;top:calc(24px + 80px);left:0;right:0;height:40px;background:rgba(15,98,254,.08);border-top:1px solid var(--accent);border-bottom:1px solid var(--accent);pointer-events:none}
+  .tp-actions{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+  .tp-actions button{padding:14px;border:none;background:transparent;font:inherit;font-size:16px;cursor:pointer}
+  .tp-cancel{color:var(--muted);border-right:1px solid var(--line)}
+  .tp-ok{color:var(--accent);font-weight:600}
+  /* Person remove */
+  .person-remove{background:transparent;border:1px solid var(--line);border-radius:50%;width:24px;height:24px;font-size:11px;color:var(--warn);cursor:pointer;padding:0;line-height:1}
+  .hh-stepper{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+  .hh-stepper input[type=number]{width:60px;padding:6px;text-align:center;font:inherit;border:1px solid var(--line);border-radius:6px}
+  .hh-stepper button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:18px;font:inherit;cursor:pointer}
+  .hh-unit{font-size:13px;color:var(--muted)}
+  .ot-wrap{margin-top:8px}
+  .ot-toggle{background:transparent;border:1px dashed var(--line);border-radius:8px;padding:6px 12px;color:var(--accent);font:inherit;cursor:pointer;font-size:13px}
+  .ot-field{margin-top:8px}
+  .ot-field label{display:block;color:var(--muted);font-size:13px;margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <h1>📊 業績回報 · 鴻海</h1>
+  <div class="sub" id="hdrSub">--</div>
+</div>
+
+<div class="container">
+
+<div class="card">
+  <h2>📅 回報日期</h2>
+  <div class="row"><label>日期</label>
+    <div class="val" id="dateDisp" style="display:flex;align-items:center;gap:6px;position:relative">
+      <span id="dateText">--</span>
+      <button type="button" id="editDateBtn" class="icon-btn" title="修改日期" style="position:relative">
+        ✏️
+        <!-- 隱形 date input 疊在按鈕上：iOS/Android 都直接點按鈕觸發原生 picker -->
+        <input type="date" id="dateInput"
+          style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0;font-size:16px">
+      </button>
+    </div>
+  </div>
+  <!-- Hidden holders so JS keeps working -->
+  <span id="userDisp" style="display:none">--</span>
+  <span id="guestCount" style="display:none">0</span>
+  <span id="atvDisp" style="display:none">0</span>
+</div>
+
+<div class="card">
+  <h2>🍱 各餐別</h2>
+  <div class="small" style="margin-bottom:8px">點 + 展開填寫餐數與營業額</div>
+
+  <div id="mealList"></div>
+
+  <span id="daySum" style="display:none">$0</span>
+</div>
+
+<div class="card">
+  <h2>🎫 餐券</h2>
+  <div class="small" style="margin-bottom:8px">填當日張數與金額（會累積到當月與對帳單）</div>
+  <div class="row"><label>🟡 黃券（張）</label><input type="number" min="0" data-voucher="yellow" data-vk="count" placeholder="0"></div>
+  <div class="row"><label>🟡 黃券金額</label><input type="number" min="0" data-voucher="yellow" data-vk="amt" placeholder="0"></div>
+  <div class="row"><label>🔵 藍券（張）</label><input type="number" min="0" data-voucher="blue" data-vk="count" placeholder="0"></div>
+  <div class="row"><label>🔵 藍券金額</label><input type="number" min="0" data-voucher="blue" data-vk="amt" placeholder="0"></div>
+  <div class="sum-line"><span>餐券合計</span><span class="val" id="voucherSum">0 張 / $0</span></div>
+</div>
+
+<div class="card">
+  <h2>🛒 進貨</h2>
+  <div class="small" style="margin-bottom:8px">填當日進貨金額</div>
+  <div class="row"><label>🥬 菜</label><input type="number" min="0" data-purchase="veg" placeholder="0"></div>
+  <div class="row"><label>🥚 蛋</label><input type="number" min="0" data-purchase="egg" placeholder="0"></div>
+  <div class="row"><label>🏭 央廚</label><input type="number" min="0" data-purchase="central" placeholder="0"></div>
+  <div class="sum-line"><span>進貨小計</span><span class="val" id="purchaseSum">$0</span></div>
+</div>
+
+<div class="card">
+  <h2>⏱️ 今日上班人員</h2>
+  <div class="small" style="margin-bottom:6px">點員工 + 展開填工時</div>
+
+  <div id="personList"></div>
+  <button id="addOther" type="button">+ 其他人員</button>
+</div>
+
+<div class="card">
+  <h2>📈 累積（不含今日）— 當月 / 對帳單</h2>
+  <div class="small" id="stmtPeriod" style="margin-bottom:8px">當月＝1號到月底；對帳單＝本月21號到下月20號</div>
+  <table class="acc-table" style="width:100%;border-collapse:collapse;font-size:14px">
+    <tr style="color:var(--muted);font-size:12px">
+      <td style="padding:4px 0"></td>
+      <td style="text-align:right;padding:4px 0">當月</td>
+      <td style="text-align:right;padding:4px 0">對帳單</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0">💰 營業額</td>
+      <td class="val" style="text-align:right" id="monthSum">$0</td>
+      <td class="val" style="text-align:right" id="stmtAmt">--</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0">🟡 黃券</td>
+      <td class="val" style="text-align:right" id="monthYellow">--</td>
+      <td class="val" style="text-align:right" id="stmtYellow">--</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0">🔵 藍券</td>
+      <td class="val" style="text-align:right" id="monthBlue">--</td>
+      <td class="val" style="text-align:right" id="stmtBlue">--</td>
+    </tr>
+    <tr style="border-top:1px dashed var(--line)">
+      <td style="padding:4px 0">🎫 券合計</td>
+      <td class="val" style="text-align:right" id="monthVoucher">--</td>
+      <td class="val" style="text-align:right" id="stmtVoucher">--</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0">🛒 進貨</td>
+      <td class="val" style="text-align:right" id="monthPurchaseSum">$0</td>
+      <td class="val" style="text-align:right" id="stmtPurchase">--</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0">⏱️ 工時</td>
+      <td class="val" style="text-align:right" id="monthHoursSum">-- h</td>
+      <td class="val" style="text-align:right;color:var(--muted)">—</td>
+    </tr>
+  </table>
+  <div class="acc-actions" style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+    <button id="manageRecords" style="flex:1;padding:6px 8px">刪除前一筆</button>
+    <button id="editRecord" style="flex:1;padding:6px 8px">修改前一筆</button>
+    <button id="fixMonth" style="flex:1;padding:6px 8px">修改總營業額</button>
+    <button id="fixMonthHours" style="flex:1;padding:6px 8px">修改總工時</button>
+  </div>
+</div>
+
+<!-- Number-keyboard input modal -->
+<div id="numInputModal" class="tp-modal" style="display:none">
+  <div class="tp-sheet" style="max-width:320px">
+    <div class="tp-title" id="numInputTitle">輸入數字</div>
+    <div style="padding:18px">
+      <input id="numInputField" type="number" inputmode="decimal" pattern="[0-9]*"
+             style="width:100%;padding:14px;font-size:22px;text-align:right;border:1px solid var(--line);border-radius:10px;font:inherit"
+             placeholder="0">
+    </div>
+    <div class="tp-actions">
+      <button type="button" class="tp-cancel" onclick="closeNumberInput(false)">取消</button>
+      <button type="button" class="tp-ok" onclick="closeNumberInput(true)">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Records management modal -->
+<div id="recordsModal" class="tp-modal" style="display:none">
+  <div class="tp-sheet" style="max-width:380px">
+    <div class="tp-title" id="recordsTitle">我這個月的回報</div>
+    <div id="recordsList" style="max-height:340px;overflow-y:auto;padding:10px"></div>
+    <div class="tp-actions">
+      <button type="button" class="tp-cancel" onclick="closeRecords()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom wheel time picker modal -->
+<div id="timePickerModal" class="tp-modal" style="display:none">
+  <div class="tp-sheet">
+    <div class="tp-title">選擇時間</div>
+    <div class="tp-cols">
+      <div class="tp-col-label">時</div>
+      <div class="tp-col-label">分</div>
+      <div class="tp-col" id="tpHours"></div>
+      <div class="tp-col" id="tpMinutes"></div>
+      <div class="tp-highlight"></div>
+    </div>
+    <div class="tp-actions">
+      <button type="button" class="tp-cancel" onclick="closeTimePicker(false)">取消</button>
+      <button type="button" class="tp-ok" onclick="closeTimePicker(true)">確定</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<div id="errBox" class="err" style="margin:0 12px"></div>
+
+<div class="submit-bar">
+  <button id="btnSubmit" class="primary" type="button" disabled>請先填完必填欄位</button>
+</div>
+
+<script>
+const LIFF_ID = "2010233112-ZHUMneyL";
+// Apps Script Web App URL (deployed 2026-06-06)
+const WEBHOOK_URL = "https://script.google.com/macros/s/<DEPLOY_ID>/exec";
+
+// 鴻海店：只有午餐、預訂餐，皆手動輸入餐數/營業額（無預設單價）
+const MEALS = [
+  { key:"lunch",    label:"午餐",   emoji:"🍱", type:"basic" },
+  { key:"preorder", label:"預訂餐", emoji:"📦", type:"basic" }
+];
+
+// 餐券（建全 2026-07-04 16:09 規格：黃券/藍券，各自輸入張數+金額，各自加總+合計；
+// 金額手動輸入、不寫死單價、不自動計入營業額）
+const VOUCHERS = [
+  { key:"yellow", label:"黃券", emoji:"🟡" },
+  { key:"blue",   label:"藍券", emoji:"🔵" }
+];
+
+// 進貨類別（金額計）
+const PURCHASES = [
+  { key:"veg",     label:"菜",   emoji:"🥬" },
+  { key:"egg",     label:"蛋",   emoji:"🥚" },
+  { key:"central", label:"央廚", emoji:"🏭" }
+];
+
+// === Date helpers ===
+function rocFromDate(d){
+  const y = d.getFullYear() - 1911;
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const w = ['日','一','二','三','四','五','六'][d.getDay()];
+  // 鴻海格式：115/7/3（五）（不補零、全形括號）；ym 仍補零供 Sheet tab 用
+  return { roc:`${y}/${d.getMonth()+1}/${d.getDate()}（${w}）`, ym:`${y}_${m}`, iso: `${d.getFullYear()}-${m}-${dd}` };
+}
+function fmtNT(n){ return "$" + Number(n||0).toLocaleString('zh-TW'); }
+function fmtHr(v){
+  const n = Number(v) || 0;
+  return (n % 1 === 0) ? String(Math.round(n)) : n.toFixed(1);
+}
+
+// === State (mutable date) ===
+let STATE = rocFromDate(new Date());
+let MONTH_KEY = "monthly_total_" + STATE.ym;
+let serverMonthCache = null;  // latest fetched server month total (null = unknown / use local fallback)
+// 修改前一筆 (edit mode): 選定舊紀錄後存 { id, ym, date, oldAmt, oldHours }，送出時「送新＋刪舊」取代
+let editingRecord = null;
+function getMonth(){
+  let base = (serverMonthCache != null) ? serverMonthCache
+    : parseInt(localStorage.getItem(MONTH_KEY) || "0", 10);
+  // 修改模式：伺服器月累積仍含被修改那筆 → 先扣掉舊值，UI 與訊息文字才不會重複計
+  if (editingRecord) base = Math.max(0, base - (editingRecord.oldAmt || 0));
+  return base;
+}
+function setMonth(v){ localStorage.setItem(MONTH_KEY, String(Math.max(0, parseInt(v,10) || 0))); }
+
+// === 當月進貨 ===
+let serverPurchaseCache = null;
+function getMonthPurchase(){
+  let base = (serverPurchaseCache != null) ? serverPurchaseCache
+    : parseInt(localStorage.getItem("monthly_purchase_" + STATE.ym) || "0", 10);
+  if (editingRecord) base = Math.max(0, base - (editingRecord.oldPurchase || 0));
+  return base;
+}
+function setMonthPurchase(v){
+  localStorage.setItem("monthly_purchase_" + STATE.ym, String(Math.max(0, parseInt(v,10) || 0)));
+}
+
+// === 對帳單累積（本月21號到下月20號；伺服器算，不含今日）===
+let stmtCache = null;   // { amt, purchase, yCnt, yAmt, bCnt, bAmt, label } or null
+function getStatement(){
+  const s = stmtCache || { amt:0, purchase:0, yCnt:0, yAmt:0, bCnt:0, bAmt:0, label:'' };
+  if (!editingRecord) return s;
+  // 修改模式：假設被修改那筆落在當前對帳窗（回報日期都在近日），先扣舊值
+  return {
+    amt:      Math.max(0, s.amt      - (editingRecord.oldAmt      || 0)),
+    purchase: Math.max(0, s.purchase - (editingRecord.oldPurchase || 0)),
+    yCnt: Math.max(0, s.yCnt - (editingRecord.oldYCnt || 0)),
+    yAmt: Math.max(0, s.yAmt - (editingRecord.oldYAmt || 0)),
+    bCnt: Math.max(0, s.bCnt - (editingRecord.oldBCnt || 0)),
+    bAmt: Math.max(0, s.bAmt - (editingRecord.oldBAmt || 0)),
+    label: s.label
+  };
+}
+async function fetchStatement(iso){
+  if (!WEBHOOK_URL) return;
+  try{
+    const r = await fetch(`${WEBHOOK_URL}?action=statement&date=${encodeURIComponent(iso)}`, { method:'GET' });
+    const j = await r.json();
+    if (j.ok){
+      stmtCache = {
+        amt: Number(j.amt)||0, purchase: Number(j.purchase)||0,
+        yCnt: Number(j.yCnt)||0, yAmt: Number(j.yAmt)||0,
+        bCnt: Number(j.bCnt)||0, bAmt: Number(j.bAmt)||0,
+        label: j.label||''
+      };
+      updateStmtUI();
+    }
+  } catch(e){ console.warn('fetchStatement failed', e); }
+}
+function fmtVoucher(cnt, amt){ return (Number(cnt)||0) + '張/' + fmtNT(amt); }
+// 後端 submit/delete 回應統一帶新月累積 → 一次套進所有 cache
+function applyServerTotals(j){
+  serverMonthCache = Number(j.monthTotal) || 0;
+  serverHoursCache = Number(j.monthHours) || 0;
+  serverPurchaseCache = Number(j.monthPurchase) || 0;
+  if (j.monthVouchers) serverVoucherCache = {
+    yCnt: Number(j.monthVouchers.yCnt)||0, yAmt: Number(j.monthVouchers.yAmt)||0,
+    bCnt: Number(j.monthVouchers.bCnt)||0, bAmt: Number(j.monthVouchers.bAmt)||0
+  };
+}
+function updateStmtUI(){
+  const s = getStatement();
+  if (s.label) document.getElementById('stmtPeriod').textContent =
+    '當月＝1號到月底；對帳單＝' + s.label + '（皆不含今日）';
+  document.getElementById('stmtAmt').textContent = fmtNT(s.amt);
+  document.getElementById('stmtYellow').textContent = fmtVoucher(s.yCnt, s.yAmt);
+  document.getElementById('stmtBlue').textContent = fmtVoucher(s.bCnt, s.bAmt);
+  document.getElementById('stmtVoucher').textContent = fmtVoucher(s.yCnt + s.bCnt, s.yAmt + s.bAmt);
+  document.getElementById('stmtPurchase').textContent = fmtNT(s.purchase);
+}
+
+// === 當月餐券（伺服器算；本地無 fallback，未部署前顯示 --）===
+let serverVoucherCache = null;   // { yCnt, yAmt, bCnt, bAmt } or null
+function getMonthVouchers(){
+  const s = serverVoucherCache || { yCnt:0, yAmt:0, bCnt:0, bAmt:0 };
+  if (!editingRecord) return s;
+  return {
+    yCnt: Math.max(0, s.yCnt - (editingRecord.oldYCnt || 0)),
+    yAmt: Math.max(0, s.yAmt - (editingRecord.oldYAmt || 0)),
+    bCnt: Math.max(0, s.bCnt - (editingRecord.oldBCnt || 0)),
+    bAmt: Math.max(0, s.bAmt - (editingRecord.oldBAmt || 0))
+  };
+}
+
+async function fetchMonth(ym){
+  if (!WEBHOOK_URL) return null;   // fallback localStorage
+  try{
+    const r = await fetch(`${WEBHOOK_URL}?ym=${encodeURIComponent(ym)}`, { method:'GET' });
+    const j = await r.json();
+    if (j.ok){
+      // populate caches
+      serverHoursCache = Number(j.monthHours) || 0;
+      serverPurchaseCache = Number(j.monthPurchase) || 0;
+      if (j.monthVouchers) serverVoucherCache = {
+        yCnt: Number(j.monthVouchers.yCnt)||0, yAmt: Number(j.monthVouchers.yAmt)||0,
+        bCnt: Number(j.monthVouchers.bCnt)||0, bAmt: Number(j.monthVouchers.bAmt)||0
+      };
+      return Number(j.monthTotal) || 0;
+    }
+    return null;
+  } catch(e){ console.warn('fetchMonth failed', e); return null; }
+}
+function updateDate(d){
+  STATE = rocFromDate(d);
+  MONTH_KEY = "monthly_total_" + STATE.ym;
+  serverMonthCache = null;
+  serverHoursCache = null;
+  serverPurchaseCache = null;
+  serverVoucherCache = null;
+  stmtCache = null;
+  document.getElementById('dateText').textContent = STATE.roc;
+  document.getElementById('hdrSub').textContent = STATE.roc;
+  const di = document.getElementById('dateInput');
+  if (di) di.value = STATE.iso;
+  // Refresh server month + statement
+  fetchMonth(STATE.ym).then(v=>{ if (v != null) serverMonthCache = v; recalc(); });
+  fetchStatement(STATE.iso);
+  recalc();
+}
+
+// === Boot ===
+let profile = { displayName: "(未取得)", userId: null };
+let employees = null;
+let dayTotal = 0;
+
+// === Monthly hours ===
+let serverHoursCache = null;
+function getMonthHours(){
+  let base = (serverHoursCache != null) ? serverHoursCache
+    : parseFloat(localStorage.getItem("monthly_hours_" + STATE.ym) || "0");
+  // 修改模式：同 getMonth，先扣掉舊紀錄工時
+  if (editingRecord) base = Math.max(0, base - (editingRecord.oldHours || 0));
+  return base;
+}
+function setMonthHours(v){
+  localStorage.setItem("monthly_hours_" + STATE.ym, String(Math.max(0, parseFloat(v) || 0)));
+}
+
+function showSuccessScreen(){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;
+    display:flex;align-items:center;justify-content:center;padding:24px
+  `;
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:18px;padding:28px 24px;text-align:center;max-width:340px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.3)">
+      <div style="font-size:56px;line-height:1;margin-bottom:14px">✅</div>
+      <div style="font-size:18px;font-weight:700;color:var(--brand);margin-bottom:6px">已成功送出</div>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:20px;line-height:1.6">
+        訊息已送到聊天室<br>
+        <strong>提示：</strong>返回 LINE 後若看不到新訊息，<br>
+        手動往下拉到底就能看到
+      </div>
+      <button type="button" id="closeSuccessBtn"
+        style="width:100%;padding:14px;background:linear-gradient(135deg,var(--brand),var(--brand-dim));color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;font:inherit;cursor:pointer;box-shadow:0 4px 12px rgba(143,46,41,.25)">
+        返回 LINE 聊天室
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#closeSuccessBtn').addEventListener('click', ()=>{
+    try{ liff.closeWindow(); } catch(e){}
+  });
+}
+
+function showDupDateWarning(dateStr, dupItem){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;
+    display:flex;align-items:center;justify-content:center;padding:24px
+  `;
+  const editBtnHtml = dupItem
+    ? `<button type="button" id="dupEditBtn"
+        style="width:100%;padding:13px;background:linear-gradient(135deg,var(--brand),var(--brand-dim));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;font:inherit;cursor:pointer;margin-bottom:8px">
+        修改這筆資料
+      </button>`
+    : `<button type="button" id="dupRecordsBtn"
+        style="width:100%;padding:13px;background:#fff;color:var(--warn);border:1px solid var(--warn);border-radius:12px;font-size:15px;font-weight:700;font:inherit;cursor:pointer;margin-bottom:8px">
+        前往刪除相同日期資料
+      </button>`;
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:18px;padding:28px 24px;text-align:center;max-width:340px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.3)">
+      <div style="font-size:56px;line-height:1;margin-bottom:14px">⚠️</div>
+      <div style="font-size:18px;font-weight:700;color:var(--warn);margin-bottom:6px">同一天已有回報</div>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:20px;line-height:1.6">
+        ${dateStr || ''} 已經有一筆你的回報資料。<br>
+        ${dupItem ? '可點下方「修改這筆資料」直接改這天的回報（送出即取代，不會重複）。' : '請先刪除相同日期資料(點下方「刪除前一筆」)，再重新送出。'}
+      </div>
+      ${editBtnHtml}
+      <button type="button" id="dupOkBtn"
+        style="width:100%;padding:13px;background:#fff;color:var(--muted);border:1px solid var(--line);border-radius:12px;font-size:15px;font-weight:700;font:inherit;cursor:pointer">
+        取消
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#dupOkBtn').addEventListener('click', ()=> overlay.remove());
+  const editBtn = overlay.querySelector('#dupEditBtn');
+  if (editBtn){ editBtn.addEventListener('click', ()=>{ overlay.remove(); try{ startEditRecord(dupItem); }catch(e){ try{ openRecords(); }catch(_){} } }); }
+  const recBtn = overlay.querySelector('#dupRecordsBtn');
+  if (recBtn){ recBtn.addEventListener('click', ()=>{ overlay.remove(); try{ openRecords(); }catch(e){} }); }
+}
+
+// v43 (建全): 同日已由「別人」回報 → 不能改別人的，提示請該員工或管理員處理
+function showDupOtherWarning(dateStr, dupItem){
+  const who = (dupItem && dupItem.reporter) ? dupItem.reporter : '其他同仁';
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;
+    display:flex;align-items:center;justify-content:center;padding:24px
+  `;
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:18px;padding:28px 24px;text-align:center;max-width:340px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.3)">
+      <div style="font-size:56px;line-height:1;margin-bottom:14px">⚠️</div>
+      <div style="font-size:18px;font-weight:700;color:var(--warn);margin-bottom:6px">同一天已由他人回報</div>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:20px;line-height:1.6">
+        ${dateStr || ''} 已經由 <b>${who}</b> 回報過了。<br>
+        業績回報每天一筆全店，你<b>不能直接修改別人的回報</b>。<br>
+        如需更正，請 <b>${who}</b> 本人或管理員修改／刪除該筆後再回報。
+      </div>
+      <button type="button" id="dupOtherOkBtn"
+        style="width:100%;padding:13px;background:linear-gradient(135deg,var(--brand),var(--brand-dim));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;font:inherit;cursor:pointer">
+        我知道了
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#dupOtherOkBtn').addEventListener('click', ()=> overlay.remove());
+}
+
+async function boot(){
+  document.getElementById('dateText').textContent = STATE.roc;
+  document.getElementById('hdrSub').textContent = STATE.roc;
+  await Promise.all([initLiff(), loadEmployees()]);
+  renderMeals();
+  renderPersons();
+  attachHandlers();
+  // Fetch current month total + statement from server (if WEBHOOK_URL configured)
+  const v = await fetchMonth(STATE.ym);
+  if (v != null) { serverMonthCache = v; }
+  fetchStatement(STATE.iso);
+  // Use recalc to update BOTH monthSum and monthHoursSum (bug fix v15)
+  recalc();
+}
+
+async function initLiff(){
+  try{
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    profile = await liff.getProfile();
+    document.getElementById('userDisp').textContent = profile.displayName;
+  } catch(e){
+    document.getElementById('userDisp').textContent = "(LIFF 載入失敗)";
+    console.warn(e);
+  }
+}
+
+async function loadEmployees(){
+  try{
+    const res = await fetch('employees.json?v=' + Date.now(), { cache:"no-store" });
+    employees = await res.json();
+  } catch(e){
+    employees = { site:"鴻海", groups:[] };
+  }
+}
+
+// === Meals ===
+function renderMeals(){
+  const host = document.getElementById('mealList');
+  host.innerHTML = "";
+  MEALS.forEach(m => {
+    const tile = document.createElement('div');
+    tile.className = 'meal-tile';
+    tile.dataset.key = m.key;
+    tile.dataset.type = m.type;
+    tile.innerHTML = `<div class="name">${m.emoji} ${m.label}</div><div class="plus">+</div>`;
+    const fields = document.createElement('div');
+    fields.className = 'meal-fields';
+    fields.innerHTML = renderMealFields(m);
+    tile.addEventListener('click', e=>{
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+      tile.classList.toggle('on');
+      recalc();
+    });
+    host.appendChild(tile);
+    host.appendChild(fields);
+  });
+  // Wire inputs
+  host.querySelectorAll('input[type=number]').forEach(inp =>
+    inp.addEventListener('input', recalc)
+  );
+}
+
+function renderMealFields(m){
+  // 鴻海：全部 basic — 餐數/營業額皆手動輸入
+  return `
+    <div class="row"><label>餐數</label><input type="number" min="0" data-meal="${m.key}" data-k="count" placeholder="0"></div>
+    <div class="row"><label>營業額</label><input type="number" min="0" data-meal="${m.key}" data-k="amount" placeholder="0"></div>
+  `;
+}
+
+// === Persons ===
+function getDefaultSchedule(){
+  return (employees && employees.default_schedule) || { start:'08:00', end:'17:00' };
+}
+function normalizeMember(member){
+  if (typeof member === 'string') return { name: member };
+  return member;
+}
+
+function renderPersons(){
+  const host = document.getElementById('personList');
+  host.innerHTML = "";
+  const GROUP_EMOJI_UI = { '正職': '💼', '支援': '🤝', '兼職': '⏱️' };
+  (employees.groups || []).forEach(g => {
+    const lbl = document.createElement('div');
+    lbl.className = 'grp-label';
+    lbl.textContent = (GROUP_EMOJI_UI[g.label] || '') + ' ' + g.label;
+    host.appendChild(lbl);
+    g.members.forEach(member => {
+      const norm = normalizeMember(member);
+      host.appendChild(buildPersonTile(norm.name, g.label, false, norm.schedule));
+    });
+  });
+}
+
+function buildPersonTile(name, group, isOther, schedule){
+  const tile = document.createElement('div');
+  tile.className = 'person-tile';
+  tile.dataset.name = name;
+  tile.dataset.group = group;
+  if (isOther) tile.dataset.other = '1';
+  const removeBtn = isOther ? `<button type="button" class="person-remove" title="刪除">✕</button>` : '';
+  tile.innerHTML = `<div class="name">${name}</div><div style="display:flex;align-items:center;gap:6px">${removeBtn}<div class="plus">+</div></div>`;
+
+  const fields = document.createElement('div');
+  fields.className = 'person-fields';
+  const otherInput = isOther ? `
+    <div class="field" style="grid-column:1/-1">
+      <label>姓名</label>
+      <input type="text" data-k="name" value="${name === '其他人員' ? '' : name}" placeholder="輸入姓名">
+    </div>
+    <div class="field" style="grid-column:1/-1">
+      <label>身份</label>
+      <div class="grp-toggle">
+        <button type="button" data-grp="正職" class="${group==='正職'?'on':''}">💼 正職</button>
+        <button type="button" data-grp="支援" class="${group==='支援'?'on':''}">🤝 支援</button>
+        <button type="button" data-grp="兼職" class="${group==='兼職'?'on':''}">⏱️ 兼職</button>
+      </div>
+    </div>` : '';
+  const sched = schedule || getDefaultSchedule();
+  fields.innerHTML = `
+    <div class="grid">
+      ${otherInput}
+      <div class="field"><label>上班</label>${timeWheelInput('start', sched.start)}</div>
+      <div class="field"><label>下班</label>${timeWheelInput('end', sched.end)}</div>
+      <div class="field"><label>休息（小時）</label>${halfHourStepper('rest')}</div>
+    </div>
+    <div class="ot-wrap">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="ot-toggle">加班</button>
+        <button type="button" class="ot-toggle note-toggle">備註</button>
+      </div>
+      <div class="ot-field" style="display:none">
+        <label>加班（小時）</label>${halfHourStepper('ot')}
+      </div>
+      <div class="note-field ot-field" style="display:none">
+        <label>備註</label>
+        <input type="text" data-k="note" maxlength="200" placeholder="輸入此人備註(選填)…"
+          style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit">
+      </div>
+    </div>
+  `;
+  // Wire up 備註 toggle (建全 2026-06-30, per-person)
+  setTimeout(()=>{
+    const noteBtn = fields.querySelector('.note-toggle');
+    const noteField = fields.querySelector('.note-field');
+    if (noteBtn && noteField){
+      noteBtn.addEventListener('click', ()=>{
+        const showing = noteField.style.display !== 'none';
+        noteField.style.display = showing ? 'none' : 'block';
+        noteBtn.textContent = showing ? '備註' : '取消備註';
+        if (showing){ const ni = noteField.querySelector('[data-k="note"]'); if (ni) ni.value = ''; }
+        else { const ni = noteField.querySelector('[data-k="note"]'); if (ni) ni.focus(); }
+      });
+    }
+  });
+  // Wire up OT toggle
+  setTimeout(()=>{
+    const otBtn = fields.querySelector('.ot-toggle');
+    const otField = fields.querySelector('.ot-field');
+    if (otBtn && otField){
+      otBtn.addEventListener('click', ()=>{
+        const showing = otField.style.display !== 'none';
+        otField.style.display = showing ? 'none' : 'block';
+        otBtn.textContent = showing ? '加班' : '取消加班';
+        if (showing){
+          // reset to 0 when hiding
+          const otIn = otField.querySelector('input[data-k="ot"]');
+          if (otIn) otIn.value = 0;
+        }
+      });
+    }
+    // Wire stepper +/- buttons
+    fields.querySelectorAll('.hh-stepper').forEach(stepper=>{
+      const input = stepper.querySelector('input[type=number]');
+      stepper.querySelectorAll('button').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          let v = parseFloat(input.value) || 0;
+          v += (btn.dataset.act === 'plus') ? 0.5 : -0.5;
+          v = Math.max(0, Math.min(6, v));
+          input.value = v;
+        });
+      });
+    });
+  }, 0);
+  tile.addEventListener('click', e=>{
+    if (e.target.closest('.person-fields') || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+    tile.classList.toggle('on');
+    validate();   // BUG fix: validate after person toggle
+  });
+
+  // group tile + fields together
+  const wrapper = document.createElement('div');
+  wrapper.appendChild(tile);
+  wrapper.appendChild(fields);
+  return wrapper;
+}
+
+function timeWheelInput(k, defaultVal){
+  const def = defaultVal || (k === 'start' ? '08:00' : '17:00');
+  return `<button type="button" class="time-wheel" data-k="${k}" data-val="${def}" onclick="openTimePicker(this)">${def}</button>`;
+}
+function halfHourStepper(k){
+  return `<div class="hh-stepper">
+    <button type="button" data-act="minus" data-k="${k}">−</button>
+    <input type="number" min="0" max="6" step="0.5" value="0" data-k="${k}">
+    <span class="hh-unit">h</span>
+    <button type="button" data-act="plus" data-k="${k}">＋</button>
+  </div>`;
+}
+// === Number-keyboard input modal ===
+let _numInputCb = null;
+function openNumberInput({ title, value, onOk }){
+  _numInputCb = onOk;
+  document.getElementById('numInputTitle').textContent = title || '輸入數字';
+  const f = document.getElementById('numInputField');
+  f.value = value || '';
+  document.getElementById('numInputModal').style.display = 'flex';
+  setTimeout(()=>{ f.focus(); f.select(); }, 50);
+}
+function closeNumberInput(commit){
+  const f = document.getElementById('numInputField');
+  if (commit && _numInputCb) _numInputCb(f.value);
+  document.getElementById('numInputModal').style.display = 'none';
+  _numInputCb = null;
+}
+window.openNumberInput = openNumberInput;
+window.closeNumberInput = closeNumberInput;
+
+// === Custom wheel time picker ===
+let _tpTarget = null;
+function openTimePicker(btn){
+  _tpTarget = btn;
+  const cur = (btn.dataset.val || '09:00').split(':');
+  const curH = parseInt(cur[0], 10) || 0;
+  const curM = parseInt(cur[1], 10) || 0;
+  const hours = document.getElementById('tpHours');
+  const minutes = document.getElementById('tpMinutes');
+  hours.innerHTML = ''; minutes.innerHTML = '';
+  // Add top + bottom padding (2 items each side so selected is centered)
+  for (let i = 0; i < 2; i++){
+    hours.innerHTML += '<div class="tp-item"></div>';
+    minutes.innerHTML += '<div class="tp-item"></div>';
+  }
+  for (let h = 0; h <= 23; h++){
+    hours.innerHTML += `<div class="tp-item" data-v="${h}">${String(h).padStart(2,'0')}</div>`;
+  }
+  // 0.5 step → minutes 00, 30
+  [0, 30].forEach(m=>{
+    minutes.innerHTML += `<div class="tp-item" data-v="${m}">${String(m).padStart(2,'0')}</div>`;
+  });
+  for (let i = 0; i < 2; i++){
+    hours.innerHTML += '<div class="tp-item"></div>';
+    minutes.innerHTML += '<div class="tp-item"></div>';
+  }
+  document.getElementById('timePickerModal').style.display = 'flex';
+  // Scroll to selected after modal visible
+  requestAnimationFrame(()=>{
+    hours.scrollTop = curH * 40;
+    minutes.scrollTop = (curM === 30 ? 1 : 0) * 40;
+    markSelected();
+  });
+  hours.onscroll = markSelected;
+  minutes.onscroll = markSelected;
+}
+function markSelected(){
+  ['tpHours','tpMinutes'].forEach(id=>{
+    const col = document.getElementById(id);
+    const idx = Math.round(col.scrollTop / 40);
+    col.querySelectorAll('.tp-item').forEach((el,i)=>{
+      el.classList.toggle('selected', i === idx + 2);
+    });
+  });
+}
+function closeTimePicker(commit){
+  if (commit && _tpTarget){
+    const hCol = document.getElementById('tpHours');
+    const mCol = document.getElementById('tpMinutes');
+    const hIdx = Math.round(hCol.scrollTop / 40);
+    const mIdx = Math.round(mCol.scrollTop / 40);
+    const hEl = hCol.querySelectorAll('.tp-item')[hIdx + 2];
+    const mEl = mCol.querySelectorAll('.tp-item')[mIdx + 2];
+    const h = hEl && hEl.dataset.v != null ? parseInt(hEl.dataset.v, 10) : 9;
+    const m = mEl && mEl.dataset.v != null ? parseInt(mEl.dataset.v, 10) : 0;
+    const val = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+    _tpTarget.dataset.val = val;
+    _tpTarget.textContent = val;
+  }
+  document.getElementById('timePickerModal').style.display = 'none';
+  _tpTarget = null;
+}
+window.openTimePicker = openTimePicker;
+window.closeTimePicker = closeTimePicker;
+
+function fmtT(v){
+  // accept either "HH:MM" or numeric hours
+  if (typeof v === 'string' && v.includes(':')) return v;
+  const f = parseFloat(v);
+  const h = Math.floor(f);
+  const m = (f - h) === 0.5 ? "30" : "00";
+  return String(h).padStart(2,'0') + ":" + m;
+}
+function timeToFloat(t){
+  if (typeof t === 'number') return t;
+  const [h, m] = (t || '00:00').split(':').map(Number);
+  return h + (m || 0)/60;
+}
+window.fmtT = fmtT;
+
+// === Calc ===
+function recalc(){
+  let total = 0;
+  let totalCount = 0;
+  document.querySelectorAll('.meal-tile.on').forEach(tile=>{
+    const k = tile.dataset.key;
+    const amt = parseInt(document.querySelector(`[data-meal="${k}"][data-k="amount"]`).value || "0", 10);
+    const cnt = parseInt(document.querySelector(`[data-meal="${k}"][data-k="count"]`).value || "0", 10);
+    total += amt;
+    totalCount += cnt;
+  });
+  dayTotal = total;
+  document.getElementById('daySum').textContent = fmtNT(total);
+
+  // Auto guest count = sum of meal counts
+  document.getElementById('guestCount').textContent = totalCount > 0 ? totalCount + ' 人' : '--';
+  // ATV = total amount / total count
+  document.getElementById('atvDisp').textContent = totalCount > 0 ? fmtNT(Math.round(total / totalCount)) : "--";
+
+  // 餐券合計（當日輸入）
+  let vCnt = 0, vAmt = 0;
+  document.querySelectorAll('[data-voucher][data-vk="count"]').forEach(inp=>{ vCnt += parseInt(inp.value || "0", 10) || 0; });
+  document.querySelectorAll('[data-voucher][data-vk="amt"]').forEach(inp=>{ vAmt += parseInt(inp.value || "0", 10) || 0; });
+  document.getElementById('voucherSum').textContent = vCnt + ' 張 / ' + fmtNT(vAmt);
+
+  // 進貨小計
+  let dayPurchase = 0;
+  document.querySelectorAll('[data-purchase]').forEach(inp=>{
+    dayPurchase += parseInt(inp.value || "0", 10) || 0;
+  });
+  document.getElementById('purchaseSum').textContent = fmtNT(dayPurchase);
+
+  // monthly累積 = 不含當日 (純伺服器值)
+  document.getElementById('monthSum').textContent = fmtNT(getMonth());
+  document.getElementById('monthPurchaseSum').textContent = fmtNT(getMonthPurchase());
+  const mv = getMonthVouchers();
+  document.getElementById('monthYellow').textContent = serverVoucherCache ? fmtVoucher(mv.yCnt, mv.yAmt) : '--';
+  document.getElementById('monthBlue').textContent = serverVoucherCache ? fmtVoucher(mv.bCnt, mv.bAmt) : '--';
+  document.getElementById('monthVoucher').textContent = serverVoucherCache ? fmtVoucher(mv.yCnt + mv.bCnt, mv.yAmt + mv.bAmt) : '--';
+  updateStmtUI();
+
+  // Day hours = sum of selected persons' worked + OT
+  let dayH = 0;
+  document.querySelectorAll('.person-tile.on').forEach(tile=>{
+    const wrapper = tile.parentElement;
+    const fields = wrapper.querySelector('.person-fields');
+    if (!fields) return;
+    const startStr = (fields.querySelector('[data-k="start"]')?.dataset.val) || '08:00';
+    const endStr = (fields.querySelector('[data-k="end"]')?.dataset.val) || '17:00';
+    const s = timeToFloat(startStr), e = timeToFloat(endStr);
+    const rest = parseFloat(fields.querySelector('input[data-k="rest"]')?.value) || 0;
+    const otField = fields.querySelector('.ot-field');
+    const ot = (otField && otField.style.display !== 'none')
+      ? (parseFloat(fields.querySelector('input[data-k="ot"]')?.value) || 0) : 0;
+    const worked = Math.max(0, (e > s ? e - s : e + 24 - s) - rest);
+    dayH += worked + ot;
+  });
+  const dhd = document.getElementById('dayHoursDisp');
+  if (dhd) dhd.textContent = dayH > 0 ? fmtHr(dayH) + ' h' : '--';
+  // monthly工時 = 不含當日 (純伺服器值)
+  document.getElementById('monthHoursSum').textContent = fmtHr(getMonthHours()) + ' h';
+
+  validate();
+}
+
+function refreshMonthly(){
+  document.getElementById('monthSum').textContent = fmtNT(getMonth() + dayTotal);
+}
+
+function validate(){
+  const btn = document.getElementById('btnSubmit');
+  const anyMeal = document.querySelectorAll('.meal-tile.on').length > 0;
+  const anyPerson = document.querySelectorAll('.person-tile.on').length > 0;
+  if (anyMeal && anyPerson){
+    btn.disabled = false;
+    btn.textContent = editingRecord ? "送出修改（取代原回報）" : "送出回報";
+  } else {
+    btn.disabled = true;
+    btn.textContent = "請先選餐別 + 員工";
+  }
+}
+
+// === Handlers ===
+function attachHandlers(){
+  // 日期 input 一直存在 (透明疊在 ✏️ 按鈕上)
+  // 任何點擊都直接觸發原生 picker — iOS Safari + Android 都通用
+  const dateInp = document.getElementById('dateInput');
+  dateInp.value = STATE.iso;
+  dateInp.addEventListener('change', () => {
+    if (dateInp.value) updateDate(new Date(dateInp.value + 'T00:00:00'));
+  });
+  // 不需要 editDateBtn 額外 click handler — 透明 input 直接收到點擊
+  // 但保留一個 fallback: showPicker (Chromium 用) 給某些桌面情境
+  document.getElementById('editDateBtn').addEventListener('click', (e)=>{
+    if (e.target.tagName !== 'INPUT' && dateInp.showPicker) {
+      try { dateInp.showPicker(); } catch(_) {}
+    }
+  });
+  document.getElementById('fixMonth').addEventListener('click', ()=>{
+    const cur = getMonth();
+    const v = prompt("請輸入本月累積營業額（不含今日）：", String(cur));
+    if (v !== null) { setMonth(v); serverMonthCache = null; recalc(); }
+  });
+  document.getElementById('fixMonthHours').addEventListener('click', ()=>{
+    const cur = getMonthHours();
+    const v = prompt("請輸入本月累積工時（不含今日，小時）：", String(cur));
+    if (v !== null) { setMonthHours(v); serverHoursCache = null; recalc(); }
+  });
+  document.getElementById('addOther').addEventListener('click', ()=>{
+    // Default to 兼職; user can switch via inline toggle
+    const w = addOtherPerson('其他人員', '兼職', getDefaultSchedule());
+    w.querySelector('.person-tile').classList.add('on');
+    validate();
+  });
+  // 餐券 / 進貨 inputs
+  document.querySelectorAll('[data-voucher],[data-purchase]').forEach(inp =>
+    inp.addEventListener('input', recalc)
+  );
+  document.getElementById('btnSubmit').addEventListener('click', submit);
+  document.getElementById('manageRecords').addEventListener('click', ()=> openRecords('delete'));
+  document.getElementById('editRecord').addEventListener('click', ()=> openRecords('edit'));
+}
+
+// 建立「其他人員」tile（addOther 按鈕與修改前一筆帶回未登錄人員共用）
+function addOtherPerson(name, group, schedule){
+  const host = document.getElementById('personList');
+  const w = buildPersonTile(name, group, true, schedule);
+  host.appendChild(w);
+  const tile = w.querySelector('.person-tile');
+  const rmBtn = tile && tile.querySelector('.person-remove');
+  if (rmBtn) rmBtn.addEventListener('click', ev=>{
+    ev.stopPropagation();
+    w.remove();
+    validate();
+  });
+  // Wire 正職/兼職 inline toggle
+  const fields = w.querySelector('.person-fields');
+  fields.querySelectorAll('.grp-toggle button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      fields.querySelectorAll('.grp-toggle button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      tile.dataset.group = b.dataset.grp;
+    });
+  });
+  return w;
+}
+
+async function openRecords(mode){
+  const isEdit = (mode === 'edit');
+  const modal = document.getElementById('recordsModal');
+  const list = document.getElementById('recordsList');
+  document.getElementById('recordsTitle').textContent = isEdit ? '選擇要修改的一筆' : '我這個月的回報';
+  modal.style.display = 'flex';
+  list.innerHTML = '<div class="small" style="text-align:center;padding:20px">載入中…</div>';
+  if (!WEBHOOK_URL){
+    list.innerHTML = '<div style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:8px">⏳</div><div class="small" style="color:var(--muted);line-height:1.6">雲端紀錄功能等待 Apps Script 部署完成<br>部署後此功能立即可用<br><br>暫時改 / 刪請聯絡管理員手動處理</div></div>';
+    return;
+  }
+  try{
+    const r = await fetch(`${WEBHOOK_URL}?action=list&ym=${encodeURIComponent(STATE.ym)}&userId=${encodeURIComponent(profile.userId||'')}`);
+    const j = await r.json();
+    if (!j.ok){
+      list.innerHTML = '<div class="small" style="color:var(--warn);padding:20px">' + (j.error || '查詢失敗') + '</div>';
+      return;
+    }
+    if (!j.items || !j.items.length){
+      list.innerHTML = '<div class="small" style="text-align:center;padding:20px">這個月還沒有你的回報紀錄</div>';
+      return;
+    }
+    list.innerHTML = '';
+    j.items.forEach(item => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px';
+      const hours = fmtHr(item.dayHours);
+      const actionBtn = isEdit
+        ? `<button class="rec-edit" style="background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:4px 10px;font:inherit;cursor:pointer">修改</button>`
+        : `<button class="rec-del" data-id="${item.id}" style="background:transparent;border:1px solid var(--warn);color:var(--warn);border-radius:6px;padding:4px 10px;font:inherit;cursor:pointer">刪除</button>`;
+      row.innerHTML = `
+        <div>
+          <div style="font-weight:600">${item.date}</div>
+          <div class="small">${fmtNT(item.dayAmt)} / ${hours}h</div>
+        </div>
+        ${actionBtn}
+      `;
+      if (isEdit){
+        row.querySelector('.rec-edit').addEventListener('click', ()=>{
+          closeRecords();
+          startEditRecord(item);
+        });
+      }
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.rec-del').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if (!confirm('確定要刪除這筆？月累積會跟著扣回。')) return;
+        btn.disabled = true; btn.textContent = '刪除中…';
+        try{
+          const dr = await fetch(WEBHOOK_URL, {
+            method:'POST',
+            headers:{ 'Content-Type':'text/plain' },
+            body: JSON.stringify({ action:'delete', ym: STATE.ym, id: btn.dataset.id })
+          });
+          const dj = await dr.json();
+          if (dj.ok){
+            applyServerTotals(dj);
+            stmtCache = null;
+            fetchStatement(STATE.iso);
+            refreshMonthly();
+            recalc();
+            openRecords();   // refresh list
+          } else {
+            alert('刪除失敗：' + (dj.error || 'unknown'));
+            btn.disabled = false; btn.textContent = '刪除';
+          }
+        } catch(e){ alert('刪除錯誤：' + e); btn.disabled = false; btn.textContent = '刪除'; }
+      });
+    });
+  } catch(e){
+    list.innerHTML = '<div class="small" style="color:var(--warn);padding:20px">查詢錯誤：' + e + '</div>';
+  }
+}
+function closeRecords(){ document.getElementById('recordsModal').style.display = 'none'; }
+window.closeRecords = closeRecords;
+
+// === 修改前一筆 (edit mode) ===
+function showEditBanner(dateStr){
+  removeEditBanner();
+  const b = document.createElement('div');
+  b.id = 'editBanner';
+  b.style.cssText = 'margin:0 12px 12px;padding:10px 12px;background:#fff8e6;border:1px solid #e0b400;border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px';
+  b.innerHTML = `
+    <div>✏️ <strong>修改模式</strong>：正在修改 <strong>${dateStr}</strong> 的回報，送出後舊資料會自動被取代</div>
+    <button type="button" id="cancelEditBtn"
+      style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap">取消</button>
+  `;
+  const container = document.querySelector('.container');
+  container.parentNode.insertBefore(b, container);
+  b.querySelector('#cancelEditBtn').addEventListener('click', cancelEdit);
+}
+function removeEditBanner(){
+  const b = document.getElementById('editBanner');
+  if (b) b.remove();
+}
+function cancelEdit(){
+  editingRecord = null;
+  removeEditBanner();
+  recalc();
+  validate();
+}
+
+// 選定舊紀錄 → 回到主畫面、帶回當時所有數據讓使用者重新修改
+function startEditRecord(item){
+  const oldV = item.vouchers || {};
+  editingRecord = {
+    id: item.id, ym: STATE.ym, date: item.date,
+    oldAmt: Number(item.dayAmt) || 0, oldHours: Number(item.dayHours) || 0,
+    oldPurchase: Number(item.dayPurchase) || 0,
+    oldYCnt: Number(oldV.yellow && oldV.yellow.count) || 0,
+    oldYAmt: Number(oldV.yellow && oldV.yellow.amt) || 0,
+    oldBCnt: Number(oldV.blue && oldV.blue.count) || 0,
+    oldBAmt: Number(oldV.blue && oldV.blue.amt) || 0
+  };
+  // 先重置表單（清掉畫面上原本填到一半的東西，也移除多出的其他人員）
+  renderMeals();
+  renderPersons();
+  document.querySelectorAll('[data-voucher],[data-purchase]').forEach(inp=>{ inp.value = ''; });
+  // 日期帶回該筆的 ROC 日期（鴻海格式 115/7/3（五））
+  const dm = /^(\d+)[./](\d+)[./](\d+)/.exec(String(item.date || ''));
+  if (dm) updateDate(new Date(Number(dm[1]) + 1911, Number(dm[2]) - 1, Number(dm[3])));
+  // 帶回餐券 / 進貨
+  if (item.vouchers){
+    VOUCHERS.forEach(v=>{
+      const vd = item.vouchers[v.key] || {};
+      const cI = document.querySelector(`[data-voucher="${v.key}"][data-vk="count"]`);
+      const aI = document.querySelector(`[data-voucher="${v.key}"][data-vk="amt"]`);
+      if (cI && vd.count) cI.value = vd.count;
+      if (aI && vd.amt) aI.value = vd.amt;
+    });
+  }
+  if (item.purchases){
+    PURCHASES.forEach(p=>{
+      const inp = document.querySelector(`[data-purchase="${p.key}"]`);
+      if (inp && item.purchases[p.key]) inp.value = item.purchases[p.key];
+    });
+  }
+  // 帶回各餐別（鴻海全 basic：餐數/營業額直接回填）
+  (item.meals || []).forEach(me => {
+    const tile = document.querySelector(`.meal-tile[data-key="${me.key}"]`);
+    if (!tile) return;
+    tile.classList.add('on');
+    const cI = document.querySelector(`[data-meal="${me.key}"][data-k="count"]`);
+    const aI = document.querySelector(`[data-meal="${me.key}"][data-k="amount"]`);
+    if (cI) cI.value = me.count || 0;
+    if (aI) aI.value = me.amount || 0;
+  });
+  // 帶回上班人員
+  (item.persons || []).forEach(p => {
+    if (!p || !p.name) return;
+    let tile = Array.from(document.querySelectorAll('.person-tile'))
+      .find(t => !t.dataset.other && t.dataset.name === p.name);
+    let wrapper;
+    if (tile){
+      wrapper = tile.parentElement;
+    } else {
+      // 當時是「其他人員」→ 重建一顆 other tile
+      wrapper = addOtherPerson(p.name, p.group || '兼職', { start: p.start, end: p.end });
+      tile = wrapper.querySelector('.person-tile');
+      const nameInp = wrapper.querySelector('input[data-k="name"]');
+      if (nameInp) nameInp.value = p.name;
+    }
+    tile.classList.add('on');
+    const fields = wrapper.querySelector('.person-fields');
+    const sBtn = fields.querySelector('[data-k="start"]');
+    const eBtn = fields.querySelector('[data-k="end"]');
+    if (sBtn && p.start){ sBtn.dataset.val = p.start; sBtn.textContent = p.start; }
+    if (eBtn && p.end){ eBtn.dataset.val = p.end; eBtn.textContent = p.end; }
+    const rI = fields.querySelector('input[data-k="rest"]');
+    if (rI) rI.value = p.rest || 0;
+    // 加班/備註的 toggle handler 是 setTimeout(0) 掛的 → 帶回值也排進 queue，確保在 handler 之後跑
+    setTimeout(()=>{
+      if ((p.ot || 0) > 0){
+        const otBtn = fields.querySelector('.ot-toggle');   // 第一顆 = 加班
+        if (otBtn) otBtn.click();                            // 展開加班欄
+        const otI = fields.querySelector('input[data-k="ot"]');
+        if (otI) otI.value = p.ot;
+      }
+      if (p.note && String(p.note).trim()){
+        const nBtn = fields.querySelector('.note-toggle');
+        if (nBtn) nBtn.click();                              // 展開備註欄
+        const nI = fields.querySelector('[data-k="note"]');
+        if (nI) nI.value = p.note;
+      }
+      recalc();
+    }, 0);
+  });
+  showEditBanner(item.date);
+  recalc();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// === Collect + Submit ===
+function collect(){
+  const meals = [];
+  document.querySelectorAll('.meal-tile.on').forEach(tile=>{
+    const k = tile.dataset.key;
+    const meta = MEALS.find(m=>m.key===k);
+    const count = parseInt(document.querySelector(`[data-meal="${k}"][data-k="count"]`).value || "0", 10);
+    const amount = parseInt(document.querySelector(`[data-meal="${k}"][data-k="amount"]`).value || "0", 10);
+    const entry = { key:k, label:meta.label, emoji:meta.emoji, count, amount, type: meta.type };
+    if (meta.type === 'muscle'){
+      entry.small = parseInt(document.querySelector(`[data-meal="${k}"][data-k="small"]`)?.value || "0", 10);
+      entry.large = parseInt(document.querySelector(`[data-meal="${k}"][data-k="large"]`)?.value || "0", 10);
+    }
+    meals.push(entry);
+  });
+  const persons = [];
+  document.querySelectorAll('.person-tile.on').forEach(tile=>{
+    const wrapper = tile.parentElement;
+    const fields = wrapper.querySelector('.person-fields');
+    let name = tile.dataset.name;
+    if (tile.dataset.other === '1'){
+      const inp = fields.querySelector('input[data-k="name"]');
+      if (inp && inp.value.trim()) name = inp.value.trim();
+    }
+    const startStr = (fields.querySelector('[data-k="start"]').dataset.val) || (fields.querySelector('[data-k="start"]').value) || '09:00';
+    const endStr = (fields.querySelector('[data-k="end"]').dataset.val) || (fields.querySelector('[data-k="end"]').value) || '20:00';
+    const start = timeToFloat(startStr);
+    const end = timeToFloat(endStr);
+    const restEl = fields.querySelector('input[data-k="rest"]');
+    const otEl = fields.querySelector('input[data-k="ot"]');
+    const rest = restEl ? parseFloat(restEl.value) || 0 : 0;
+    const ot = (otEl && fields.querySelector('.ot-field') && fields.querySelector('.ot-field').style.display !== 'none')
+      ? (parseFloat(otEl.value) || 0) : 0;
+    const worked = (end > start ? end - start : end + 24 - start) - rest;
+    const noteEl = fields.querySelector('[data-k="note"]');
+    const note = noteEl ? (noteEl.value || '').trim() : '';
+    persons.push({ name, group: tile.dataset.group, start: startStr, end: endStr, rest, ot, worked: Math.max(0, worked), note });
+  });
+  const dayAmt = meals.reduce((s,m)=>s+m.amount, 0);
+  const guests = meals.reduce((s,m)=>s + (m.count || 0), 0);
+  const atv = guests > 0 ? Math.round(dayAmt / guests) : 0;
+  const monthTotal = getMonth();   // 不含當日
+  // total hours = sum of worked + ot
+  const dayHours = persons.reduce((s,p)=> s + p.worked + (p.ot || 0), 0);
+  const monthHours = getMonthHours();   // 不含當日
+  // 餐券：各券別 張數+金額
+  const vouchers = {};
+  let voucherCnt = 0, voucherAmt = 0;
+  VOUCHERS.forEach(v=>{
+    const cnt = parseInt(document.querySelector(`[data-voucher="${v.key}"][data-vk="count"]`)?.value || "0", 10) || 0;
+    const amt = parseInt(document.querySelector(`[data-voucher="${v.key}"][data-vk="amt"]`)?.value || "0", 10) || 0;
+    vouchers[v.key] = { count: cnt, amt: amt };
+    voucherCnt += cnt; voucherAmt += amt;
+  });
+  // 進貨金額
+  const purchases = {};
+  let dayPurchase = 0;
+  PURCHASES.forEach(p=>{
+    const n = parseInt(document.querySelector(`[data-purchase="${p.key}"]`)?.value || "0", 10) || 0;
+    purchases[p.key] = n;
+    dayPurchase += n;
+  });
+  return {
+    date: STATE.roc, iso: STATE.iso, site:"鴻海", reporter: profile.displayName,
+    guests, atv, meals, persons, dayAmt, monthTotal, dayHours, monthHours,
+    vouchers, voucherCnt, voucherAmt, purchases, dayPurchase,
+    monthPurchase: getMonthPurchase(),   // 不含當日
+    monthVouchers: getMonthVouchers(),   // 不含當日（伺服器值；未部署前為 0）
+    statement: getStatement()            // 不含當日（伺服器算 21→20 窗）
+  };
+}
+
+function buildText(d){
+  // 鴻海格式（建全 2026-07-04 範本）
+  const lines = [];
+  lines.push('日期：' + d.date);
+  lines.push('');
+  lines.push('每日營業狀況⋯⋯⋯⋯');
+  lines.push('（1）營業額：' + d.dayAmt);
+  lines.push('（2）餐數：' + d.guests);
+  const vParts = [];
+  VOUCHERS.forEach(v=>{
+    const vd = d.vouchers[v.key] || {};
+    if ((vd.count || 0) > 0 || (vd.amt || 0) > 0) vParts.push(v.emoji + v.label + ' ' + fmtVoucher(vd.count, vd.amt));
+  });
+  lines.push('（3）餐券：' + (vParts.length
+    ? vParts.join(' ') + '（合計 ' + fmtVoucher(d.voucherCnt, d.voucherAmt) + '）' : '無'));
+  const P_EMOJI = { veg:'🥬', egg:'🥚', central:'🏭' };
+  const pParts = [];
+  ['veg','egg','central'].forEach(k=>{
+    if ((d.purchases[k] || 0) > 0) pParts.push(P_EMOJI[k] + d.purchases[k]);
+  });
+  lines.push('（4）進貨：' + (pParts.length ? pParts.join(' ') + '（合計 ' + d.dayPurchase + '）' : '無'));
+  lines.push('（5）工時：' + fmtHr(d.dayHours));
+  lines.push('————————————');
+  lines.push('（6）當月營業額：' + (d.monthTotal + d.dayAmt));
+  const mv = d.monthVouchers || { yCnt:0, yAmt:0, bCnt:0, bAmt:0 };
+  const yv = d.vouchers.yellow || {}, bv = d.vouchers.blue || {};
+  lines.push('（7）當月餐券：🟡' + fmtVoucher(mv.yCnt + (yv.count||0), mv.yAmt + (yv.amt||0)) +
+             ' 🔵' + fmtVoucher(mv.bCnt + (bv.count||0), mv.bAmt + (bv.amt||0)));
+  lines.push('（8）當月進貨：' + (d.monthPurchase + d.dayPurchase));
+  lines.push('（9）當月總工時：' + fmtHr(d.monthHours + d.dayHours));
+  lines.push('');
+  lines.push('出勤紀錄⋯⋯⋯⋯⋯');
+  const byGroup = {};
+  d.persons.filter(p => p.name && p.name.trim()).forEach(p=>{
+    (byGroup[p.group] = byGroup[p.group] || []).push(p);
+  });
+  // 正職(不加標頭) → 支援 → 兼職 → 其他
+  const groupOrder = ['正職', '支援', '兼職'];
+  const sortedGroups = Object.keys(byGroup).sort((a, b) => {
+    const ai = groupOrder.indexOf(a);
+    const bi = groupOrder.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+  const GROUP_EMOJI = { '支援': '🤝', '兼職': '⏱️' };
+  const SEP = '⋯⋯⋯⋯⋯⋯⋯⋯⋯';
+  sortedGroups.forEach(g => {
+    if (g !== '正職'){
+      const e = GROUP_EMOJI[g] || '';
+      lines.push('【' + (e ? e + ' ' : '') + g + '】');
+    }
+    byGroup[g].forEach(p => {
+      const totalH = (p.worked + (p.ot || 0));
+      const otPart = p.ot > 0 ? ('加班:' + fmtHr(p.ot) + 'h/') : '';
+      lines.push(p.name);
+      lines.push('出勤時間：' + p.start + '-' + p.end);
+      lines.push('(休息:' + fmtHr(p.rest) + 'h/' + otPart + '工時:' + fmtHr(totalH) + 'h)');
+      if (p.note && p.note.trim()) lines.push('備註:' + p.note.trim());
+      lines.push(SEP);
+    });
+  });
+  lines.push('');
+  lines.push('對帳單累計');
+  lines.push('（本月21號到下月20號）');
+  lines.push('');
+  const s = d.statement || { amt:0, purchase:0, yCnt:0, yAmt:0, bCnt:0, bAmt:0 };
+  lines.push('（1）💰累計營業額: ' + (s.amt + d.dayAmt));
+  lines.push('（2）🟡黃券：' + fmtVoucher(s.yCnt + (yv.count||0), s.yAmt + (yv.amt||0)));
+  lines.push('（3）🔵藍券：' + fmtVoucher(s.bCnt + (bv.count||0), s.bAmt + (bv.amt||0)));
+  lines.push('（4）🛒累計進貨：' + (s.purchase + d.dayPurchase));
+  return lines.join('\n');
+}
+
+async function submit(){
+  const errBox = document.getElementById('errBox');
+  const btnS = document.getElementById('btnSubmit');
+  const restoreBtn = ()=>{ if(btnS){ btnS.disabled = false; } try{ validate(); }catch(_){} };
+  errBox.textContent = "";
+  // v39 (建全): 送出期間鎖住按鈕+反灰讀秒，避免處理延遲那幾秒被重複點擊造成重複回報
+  if (btnS){ btnS.disabled = true; btnS.textContent = "⏳ 送出中…請勿重複點擊"; }
+  try{
+    const d = collect();
+    // v38 (建全): 送出前確認 LIFF access token 有效，缺失/過期就先重新登入，避免 sendMessages 報 UNAUTHORIZED；放在寫入前→不會重複列
+    if (!liff || !liff.isLoggedIn || !liff.isLoggedIn() || !liff.getAccessToken || !liff.getAccessToken()){
+      errBox.textContent = "LINE 登入狀態已失效，正在重新登入…完成後請再按一次送出。";
+      restoreBtn();
+      try{ if (liff && liff.login) liff.login(); }catch(_){}
+      return;
+    }
+    // v45 (建全): 送出前必須已從後端讀到「當月累積」+「對帳單累積」真值，否則訊息會用 0 加總。沒讀到→當場補讀；仍失敗→擋住不送(絕不送0)
+    if (serverMonthCache == null || stmtCache == null){
+      errBox.textContent = "⏳ 當月累積資料還在讀取中，請等 1～2 秒讀完再送出！";
+      try{ const mt = await fetchMonth(STATE.ym); if (mt != null) serverMonthCache = mt; await fetchStatement(STATE.iso); }catch(_){}
+      recalc();
+    }
+    if (serverMonthCache == null || stmtCache == null){
+      errBox.textContent = "⏳ 當月累積資料還在讀取中，請等 1～2 秒讀完再送出！";
+      restoreBtn();
+      return;
+    }
+    // 0) 同日重複檢查 (建全；v43 改全站跨人)：userId 留空→後端回傳全站當月所有人，才抓得到別人報過的同一天(每日一筆全店)
+    if (WEBHOOK_URL){
+      try{
+        const lr = await fetch(`${WEBHOOK_URL}?action=list&ym=${encodeURIComponent(STATE.ym)}&userId=`);
+        const lj = await lr.json();
+        // 修改模式：被修改的那筆自己不算重複
+        const dupItem = (lj && lj.ok && Array.isArray(lj.items))
+          ? lj.items.find(it => it.date === d.date && !(editingRecord && String(it.id) === String(editingRecord.id)))
+          : null;
+        if (dupItem){
+          // v41/v43 (建全): 同日已有回報 → 跳提示；自己的→【修改】按鈕，別人的→提示請該員工/管理員處理
+          restoreBtn();
+          const mine = String(dupItem.userId || '') === String(profile.userId || '');
+          if (mine) showDupDateWarning(d.date, dupItem);
+          else showDupOtherWarning(d.date, dupItem);
+          return;
+        }
+      } catch(e){ console.warn('同日檢查失敗，不擋送出', e); }
+    }
+    // 1) Post to Apps Script backend (record + get new month total)
+    if (WEBHOOK_URL){
+      try{
+        const r = await fetch(WEBHOOK_URL, {
+          method:'POST',
+          headers:{ 'Content-Type':'text/plain' },   // text/plain avoids preflight in Apps Script
+          body: JSON.stringify({
+            action:'submit',
+            date: d.date, iso: d.iso, ym: STATE.ym, site: d.site,
+            reporter: d.reporter, userId: profile.userId || '',
+            dayAmt: d.dayAmt, dayHours: d.dayHours,
+            dayPurchase: d.dayPurchase, vouchers: d.vouchers, purchases: d.purchases,
+            meals: d.meals, persons: d.persons   // 完整明細存進 sheet (persons 內含每人 note，v34)
+          })
+        });
+        const j = await r.json();
+        if (j.ok){
+          // Cache the NEW server values (含今日 after our POST) for next UI refresh
+          applyServerTotals(j);
+          // d.monthTotal / d.monthHours 保留為提交前的值 (不含今日)，per建全
+          // 修改模式：新資料已寫入 → 刪掉舊那筆完成「取代」
+          if (editingRecord){
+            try{
+              const dr = await fetch(WEBHOOK_URL, {
+                method:'POST',
+                headers:{ 'Content-Type':'text/plain' },
+                body: JSON.stringify({ action:'delete', ym: editingRecord.ym, id: editingRecord.id })
+              });
+              const dj = await dr.json();
+              if (dj.ok){
+                applyServerTotals(dj);
+              } else {
+                alert('⚠️ 修改後的回報已送出，但舊資料刪除失敗。請點「刪除前一筆」手動刪除 ' + editingRecord.date + ' 的舊資料，以免月累積重複計算。');
+              }
+            } catch(delErr){
+              console.warn('replace-delete failed', delErr);
+              alert('⚠️ 修改後的回報已送出，但舊資料刪除失敗。請點「刪除前一筆」手動刪除 ' + editingRecord.date + ' 的舊資料，以免月累積重複計算。');
+            }
+          }
+        }
+      } catch(e){ console.warn('webhook submit failed', e); }
+    }
+    const text = buildText(d);
+    if (!liff || !liff.sendMessages){
+      errBox.textContent = "LIFF SDK 未載入，無法送出";
+      restoreBtn();
+      return;
+    }
+    const payload = [{ type:'text', text }];
+    try{
+      await liff.sendMessages(payload);
+    } catch(sendErr){
+      // log full payload to help debug
+      console.error('sendMessages failed', sendErr, JSON.stringify(payload));
+      const emsg = String((sendErr && (sendErr.message || sendErr.code)) || sendErr || '');
+      // v41 (建全): 電腦版 LINE sendMessages 需「從聊天室開啟」不支援 → 報 403；但資料已透過 webhook 寫進 Sheet → 不當完全失敗
+      if (/403|permission|grant|access_token|chat|not launched|unauthor/i.test(emsg)){
+        if (editingRecord){ editingRecord = null; removeEditBanner(); }
+        stmtCache = null; fetchStatement(STATE.iso);
+        errBox.innerHTML = '✅ 你的業績已存入系統累積表（數字已記錄）。<br>' +
+          '<small>⚠️ 但<b>電腦版 LINE 無法把回報自動貼到群組聊天室</b>（LINE 平台限制：傳訊功能需從手機版聊天室開啟）。<br>' +
+          '若需要在群組顯示，請改用<b>手機版</b>開同一天再送一次（會偵測同日、按「修改」即可、不會重複）。</small>';
+        restoreBtn();
+        return;
+      }
+      const payloadStr = JSON.stringify(payload);
+      errBox.innerHTML = '送出失敗：' + (sendErr.code || '') + ' ' + (sendErr.message || sendErr) +
+        '<br><small>payload 長度 ' + payloadStr.length + ' bytes</small>' +
+        '<br><details style="margin-top:6px"><summary style="cursor:pointer">查看 Flex JSON</summary>' +
+        '<textarea readonly style="width:100%;height:160px;font-size:10px;font-family:monospace">' +
+        payloadStr.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</textarea></details>';
+      restoreBtn();
+      return;
+    }
+    // local fallback bump (in case webhook absent)
+    // 修改模式下 getMonth/getMonthHours 已扣掉舊值 → 這裡寫回的就是「取代後」的正確累積
+    if (serverMonthCache == null) setMonth(getMonth() + d.dayAmt);
+    if (serverHoursCache == null) setMonthHours(getMonthHours() + d.dayHours);
+    if (serverPurchaseCache == null) setMonthPurchase(getMonthPurchase() + d.dayPurchase);
+    // 結束修改模式（訊息已送出；sheet 寫入依 fire-and-forget 原則不擋）
+    if (editingRecord){ editingRecord = null; removeEditBanner(); }
+    // 刷新對帳單累積（fire-and-forget）
+    stmtCache = null;
+    fetchStatement(STATE.iso);
+    // LINE 對話置底其實不能由 LIFF 強制控制（LINE 客戶端保留 scroll 位置）
+    // 改成：顯示成功訊息 + 按鈕讓使用者主動返回。新開 chat 才會自動 scroll 到底
+    showSuccessScreen();
+  } catch(e){
+    console.error('submit error', e);
+    errBox.textContent = "送出失敗：" + (e.message || e);
+    restoreBtn();
+  }
+}
+
+boot();
+</script>
+</body>
+</html>

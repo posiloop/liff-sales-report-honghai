@@ -1,0 +1,25 @@
+{
+  "site": "鴻海",
+  "default_schedule": { "start": "08:00", "end": "16:00" },
+  "groups": [
+    {
+      "label": "正職",
+      "members": [
+        { "name": "楊巧鈺", "schedule": { "start": "08:00", "end": "16:00" } }
+      ]
+    },
+    {
+      "label": "支援",
+      "members": [
+        { "name": "萬方儀", "schedule": { "start": "08:00", "end": "16:00" } }
+      ]
+    },
+    {
+      "label": "兼職",
+      "members": [
+        { "name": "程頤喬", "schedule": { "start": "09:00", "end": "14:00" } },
+        { "name": "林怡君", "schedule": { "start": "10:00", "end": "14:00" } }
+      ]
+    }
+  ]
+}
