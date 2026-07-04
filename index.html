@@ -405,8 +405,9 @@ function updateStmtUI(){
   // 灰字固定通則（建全 2026-07-04）：不顯示實際日期、不加「不含今日」
   document.getElementById('stmtPeriod').textContent = '當月＝1號到月底；對帳單＝每月21號〜次月20號';
   document.getElementById('stmtAmt').textContent = fmtNT(s.amt);
-  document.getElementById('stmtYellow').textContent = fmtVoucher(s.yCnt, s.yAmt);
-  document.getElementById('stmtBlue').textContent = fmtVoucher(s.bCnt, s.bAmt);
+  // 建全 2026-07-04：對帳單券只顯張數、不顯金額
+  document.getElementById('stmtYellow').textContent = (s.yCnt || 0) + '張';
+  document.getElementById('stmtBlue').textContent = (s.bCnt || 0) + '張';
   // 建全 2026-07-04：對帳單不計進貨 → 對帳單欄固定「—」（進貨只算當月）
   document.getElementById('stmtPurchase').textContent = '—';
 }
@@ -1440,15 +1441,15 @@ function buildText(d){
   lines.push('日期：' + d.date);
   lines.push('');
   lines.push('每日營業狀況⋯⋯⋯⋯');
-  lines.push('（1）營業額：' + d.dayAmt);
-  lines.push('（2）餐數：' + d.guests);
-  // （3）餐券：張數＋emoji、以「、」分隔（建全 2026-07-04 加回 emoji）
+  lines.push('營業額：' + d.dayAmt);
+  lines.push('餐數：' + d.guests);
+  // 餐券：張數＋emoji、以「、」分隔（建全 2026-07-04 加回 emoji）
   const vParts = [];
   VOUCHERS.forEach(v=>{
     const vd = d.vouchers[v.key] || {};
     if ((vd.count || 0) > 0) vParts.push(v.emoji + v.label + ' ' + (vd.count||0) + '張');
   });
-  lines.push('（3）餐券：' + (vParts.length ? vParts.join('、') : '無'));
+  lines.push('餐券：' + (vParts.length ? vParts.join('、') : '無'));
   // （4）進貨：emoji＋品項文字、以「、」分隔（例 🥬菜500、🥚蛋300）
   const P_EMOJI = { veg:'🥬', egg:'🥚', central:'🏭' };
   const P_LABEL = { veg:'菜', egg:'蛋', central:'央廚' };
@@ -1457,8 +1458,8 @@ function buildText(d){
     if ((d.purchases[k] || 0) > 0) pParts.push(P_EMOJI[k] + P_LABEL[k] + d.purchases[k]);
   });
   (d.purchases.others || []).forEach(o=>{ if ((o.amt||0) > 0 || o.name) pParts.push('📦' + (o.name||'其他') + o.amt); });
-  lines.push('（4）進貨：' + (pParts.length ? pParts.join('、') + '（合計 ' + d.dayPurchase + '）' : '無'));
-  lines.push('（5）工時：' + fmtHr(d.dayHours));
+  lines.push('進貨：' + (pParts.length ? pParts.join('、') + '（合計 ' + d.dayPurchase + '）' : '無'));
+  lines.push('工時：' + fmtHr(d.dayHours));
   lines.push('————————————');
   // 當月累計（1號到月底）
   const mv = d.monthVouchers || { yCnt:0, yAmt:0, bCnt:0, bAmt:0 };
