@@ -138,10 +138,17 @@ function statementTotals(isoDate) {
     if (lastRow < 2) return;
     const rows = sheet.getRange(2, 4, lastRow - 1, 11).getValues();   // D(iso)..N(藍券金額)
     rows.forEach(function(r) {
-      const iso = String(r[0] || '');
-      if (!iso) return;
-      const rd = new Date(iso + 'T00:00:00');
-      if (isNaN(rd.getTime()) || rd < w.start || rd > w.end) return;
+      // r[0] = ISO日期(D 欄)。Sheets 常把 "2026-07-03" 這種字串自動轉成 Date 物件，
+      // 也可能存成純字串，兩種都要能解析（否則對帳單一律算不到、回 0）。
+      var rd;
+      if (r[0] instanceof Date) {
+        rd = new Date(r[0].getFullYear(), r[0].getMonth(), r[0].getDate());
+      } else {
+        const iso = String(r[0] || '').slice(0, 10);
+        if (!iso) return;
+        rd = new Date(iso + 'T00:00:00');
+      }
+      if (!rd || isNaN(rd.getTime()) || rd < w.start || rd > w.end) return;
       amt      += Number(r[4])  || 0;   // H 全日營業額（自 D 起 offset 4）
       purchase += Number(r[6])  || 0;   // J 全日進貨
       yCnt     += Number(r[7])  || 0;   // K 黃券張

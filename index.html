@@ -151,11 +151,11 @@
 
 <div class="card">
   <h2>🎫 餐券</h2>
-  <div class="small" style="margin-bottom:8px">填當日張數與金額（會累積到當月與對帳單）</div>
-  <div class="row"><label>🟡 黃券（張）</label><input type="number" min="0" data-voucher="yellow" data-vk="count" placeholder="0"></div>
-  <div class="row"><label>🟡 黃券金額</label><input type="number" min="0" data-voucher="yellow" data-vk="amt" placeholder="0"></div>
-  <div class="row"><label>🔵 藍券（張）</label><input type="number" min="0" data-voucher="blue" data-vk="count" placeholder="0"></div>
-  <div class="row"><label>🔵 藍券金額</label><input type="number" min="0" data-voucher="blue" data-vk="amt" placeholder="0"></div>
+  <div class="small" style="margin-bottom:8px">只填當日「張數」，金額自動算（黃券 70 元／藍券 110 元）</div>
+  <div class="row"><label>🟡 黃券 70 元（張）</label><input type="number" min="0" data-voucher="yellow" data-vk="count" placeholder="0"></div>
+  <div class="row" style="color:var(--muted)"><label>🟡 黃券金額</label><span class="val" id="yellowAmtShow">$0</span></div>
+  <div class="row"><label>🔵 藍券 110 元（張）</label><input type="number" min="0" data-voucher="blue" data-vk="count" placeholder="0"></div>
+  <div class="row" style="color:var(--muted)"><label>🔵 藍券金額</label><span class="val" id="blueAmtShow">$0</span></div>
   <div class="sum-line"><span>餐券合計</span><span class="val" id="voucherSum">0 張 / $0</span></div>
 </div>
 
@@ -288,12 +288,13 @@ const MEALS = [
   { key:"preorder", label:"預訂餐", emoji:"📦", type:"basic" }
 ];
 
-// 餐券（建全 2026-07-04 16:09 規格：黃券/藍券，各自輸入張數+金額，各自加總+合計；
-// 金額手動輸入、不寫死單價、不自動計入營業額）
+// 餐券（建全 2026-07-04 22:47 改規格：黃券固定 70 元、藍券固定 110 元，只輸入張數→金額 = 張數 × 單價 自動算；
+// 不自動計入營業額）
 const VOUCHERS = [
-  { key:"yellow", label:"黃券", emoji:"🟡" },
-  { key:"blue",   label:"藍券", emoji:"🔵" }
+  { key:"yellow", label:"黃券", emoji:"🟡", price:70 },
+  { key:"blue",   label:"藍券", emoji:"🔵", price:110 }
 ];
+const VOUCHER_PRICE = { yellow:70, blue:110 };
 
 // 進貨類別（金額計）
 const PURCHASES = [
@@ -886,10 +887,15 @@ function recalc(){
   // ATV = total amount / total count
   document.getElementById('atvDisp').textContent = totalCount > 0 ? fmtNT(Math.round(total / totalCount)) : "--";
 
-  // 餐券合計（當日輸入）
+  // 餐券合計（當日輸入；金額 = 張數 × 固定單價 黃70/藍110，自動算）
   let vCnt = 0, vAmt = 0;
-  document.querySelectorAll('[data-voucher][data-vk="count"]').forEach(inp=>{ vCnt += parseInt(inp.value || "0", 10) || 0; });
-  document.querySelectorAll('[data-voucher][data-vk="amt"]').forEach(inp=>{ vAmt += parseInt(inp.value || "0", 10) || 0; });
+  VOUCHERS.forEach(v=>{
+    const c = parseInt(document.querySelector(`[data-voucher="${v.key}"][data-vk="count"]`)?.value || "0", 10) || 0;
+    const a = c * v.price;
+    vCnt += c; vAmt += a;
+    const show = document.getElementById(v.key + 'AmtShow');
+    if (show) show.textContent = fmtNT(a);
+  });
   document.getElementById('voucherSum').textContent = vCnt + ' 張 / ' + fmtNT(vAmt);
 
   // 進貨小計
@@ -1141,9 +1147,7 @@ function startEditRecord(item){
     VOUCHERS.forEach(v=>{
       const vd = item.vouchers[v.key] || {};
       const cI = document.querySelector(`[data-voucher="${v.key}"][data-vk="count"]`);
-      const aI = document.querySelector(`[data-voucher="${v.key}"][data-vk="amt"]`);
-      if (cI && vd.count) cI.value = vd.count;
-      if (aI && vd.amt) aI.value = vd.amt;
+      if (cI && vd.count) cI.value = vd.count;   // 金額由 recalc 依張數自動算，不需帶回
     });
   }
   if (item.purchases){
@@ -1252,12 +1256,12 @@ function collect(){
   // total hours = sum of worked + ot
   const dayHours = persons.reduce((s,p)=> s + p.worked + (p.ot || 0), 0);
   const monthHours = getMonthHours();   // 不含當日
-  // 餐券：各券別 張數+金額
+  // 餐券：各券別只輸張數，金額 = 張數 × 固定單價（黃70/藍110）自動算
   const vouchers = {};
   let voucherCnt = 0, voucherAmt = 0;
   VOUCHERS.forEach(v=>{
     const cnt = parseInt(document.querySelector(`[data-voucher="${v.key}"][data-vk="count"]`)?.value || "0", 10) || 0;
-    const amt = parseInt(document.querySelector(`[data-voucher="${v.key}"][data-vk="amt"]`)?.value || "0", 10) || 0;
+    const amt = cnt * v.price;
     vouchers[v.key] = { count: cnt, amt: amt };
     voucherCnt += cnt; voucherAmt += amt;
   });
