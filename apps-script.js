@@ -1,4 +1,4 @@
-// ★ VERSION 2026-07-04c（對帳單 Date 修正 + 修改數值 adjust + ensureTab 強制 D 欄純文字防未來月份對帳單歸零）
+// ★ VERSION 2026-07-04d（+ 當月總餐數 monthGuests：由 meals_json 加總、可 adjust 修改；供 LIFF 顯示與日均餐數）
 /**
  * 業績回報-鴻海 累積 backend (hh-v2 — 建全 2026-07-04 16:09 規格：
  * 餐券改 黃券/藍券 各自張數+金額；當月/對帳單雙軌加總含 營業額/餐券/進貨)
@@ -49,7 +49,7 @@ function ensureTab(ym) {
 }
 
 function emptyTotals_() {
-  return { monthTotal: 0, monthHours: 0, monthPurchase: 0,
+  return { monthTotal: 0, monthHours: 0, monthPurchase: 0, monthGuests: 0,
            monthVouchers: { yCnt: 0, yAmt: 0, bCnt: 0, bAmt: 0 } };
 }
 
@@ -58,7 +58,7 @@ function monthTotalsFor(ym) {
   if (!sheet) return emptyTotals_();
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return emptyTotals_();
-  const vals = sheet.getRange(2, 8, lastRow - 1, 7).getValues();   // H..N
+  const vals = sheet.getRange(2, 8, lastRow - 1, 8).getValues();   // H..O (O=meals_json 用來算餐數)
   const t = emptyTotals_();
   vals.forEach(function(r) {
     t.monthTotal    += Number(r[0]) || 0;   // H
@@ -68,6 +68,11 @@ function monthTotalsFor(ym) {
     t.monthVouchers.yAmt += Number(r[4]) || 0;   // L
     t.monthVouchers.bCnt += Number(r[5]) || 0;   // M
     t.monthVouchers.bAmt += Number(r[6]) || 0;   // N
+    // 餐數 = 該日各餐別 count 加總（存在 meals_json / O 欄）
+    try {
+      var meals = r[7] ? JSON.parse(r[7]) : [];
+      if (meals && meals.length) meals.forEach(function(m){ t.monthGuests += Number(m.count) || 0; });
+    } catch (_) {}
   });
   return t;
 }
@@ -135,7 +140,7 @@ function ensureAdjTab_() {
 
 // 回傳某 scope+key 下所有調整聚合值
 function adjMap_(scope, key) {
-  const out = { amt: 0, hours: 0, purchase: 0, yCnt: 0, yAmt: 0, bCnt: 0, bAmt: 0 };
+  const out = { amt: 0, hours: 0, purchase: 0, guests: 0, yCnt: 0, yAmt: 0, bCnt: 0, bAmt: 0 };
   const sheet = SpreadsheetApp.getActive().getSheetByName(ADJ_TAB);
   if (!sheet) return out;
   const lastRow = sheet.getLastRow();
@@ -148,6 +153,7 @@ function adjMap_(scope, key) {
     if (field === 'amt') out.amt += v;
     else if (field === 'hours') out.hours += v;
     else if (field === 'purchase') out.purchase += v;
+    else if (field === 'guests') out.guests += v;
     else if (field === 'yellow') { out.yCnt += v; out.yAmt += v * VPRICE.yellow; }
     else if (field === 'blue') { out.bCnt += v; out.bAmt += v * VPRICE.blue; }
   });
@@ -177,6 +183,7 @@ function rowsValueFor_(scope, key, field, refDate) {
     if (field === 'amt') return t.monthTotal;
     if (field === 'hours') return t.monthHours;
     if (field === 'purchase') return t.monthPurchase;
+    if (field === 'guests') return t.monthGuests;
     if (field === 'yellow') return t.monthVouchers.yCnt;
     if (field === 'blue') return t.monthVouchers.bCnt;
   } else {
@@ -248,6 +255,7 @@ function totalsPayload_(ym, extra) {
   out.monthTotal = t.monthTotal + a.amt;
   out.monthHours = t.monthHours + a.hours;
   out.monthPurchase = t.monthPurchase + a.purchase;
+  out.monthGuests = t.monthGuests + a.guests;
   out.monthVouchers = {
     yCnt: t.monthVouchers.yCnt + a.yCnt, yAmt: t.monthVouchers.yAmt + a.yAmt,
     bCnt: t.monthVouchers.bCnt + a.bCnt, bAmt: t.monthVouchers.bAmt + a.bAmt
@@ -298,8 +306,8 @@ function doPost(e) {
       if ((scope !== 'month' && scope !== 'statement') || !field || isNaN(target)) {
         return _json({ ok: false, error: 'bad adjust params' });
       }
-      if (scope === 'statement' && field === 'hours') {
-        return _json({ ok: false, error: '對帳單不記工時' });
+      if (scope === 'statement' && (field === 'hours' || field === 'guests')) {
+        return _json({ ok: false, error: '對帳單不記工時/餐數' });
       }
       const ym = data.ym;
       const refDate = data.date;   // ISO，用於算對帳窗與當月ym

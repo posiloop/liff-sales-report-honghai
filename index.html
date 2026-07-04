@@ -210,6 +210,11 @@
       <td class="val" style="text-align:right" id="stmtPurchase">--</td>
     </tr>
     <tr>
+      <td style="padding:4px 0">🍽️ 總餐數</td>
+      <td class="val" style="text-align:right" id="monthGuestsSum">--</td>
+      <td class="val" style="text-align:right;color:var(--muted)">—</td>
+    </tr>
+    <tr>
       <td style="padding:4px 0">⏱️ 工時</td>
       <td class="val" style="text-align:right" id="monthHoursSum">-- h</td>
       <td class="val" style="text-align:right;color:var(--muted)">—</td>
@@ -343,6 +348,14 @@ function setMonthPurchase(v){
   localStorage.setItem("monthly_purchase_" + STATE.ym, String(Math.max(0, parseInt(v,10) || 0)));
 }
 
+// === 當月總餐數（伺服器算＝各日餐別 count 加總，不含今日；建全 2026-07-04）===
+let serverGuestsCache = null;
+function getMonthGuests(){
+  let base = (serverGuestsCache != null) ? serverGuestsCache : 0;
+  if (editingRecord) base = Math.max(0, base - (editingRecord.oldGuests || 0));
+  return base;
+}
+
 // === 對帳單累積（本月21號到下月20號；伺服器算，不含今日）===
 let stmtCache = null;   // { amt, purchase, yCnt, yAmt, bCnt, bAmt, label } or null
 function getStatement(){
@@ -381,6 +394,7 @@ function applyServerTotals(j){
   serverMonthCache = Number(j.monthTotal) || 0;
   serverHoursCache = Number(j.monthHours) || 0;
   serverPurchaseCache = Number(j.monthPurchase) || 0;
+  if (j.monthGuests != null) serverGuestsCache = Number(j.monthGuests) || 0;
   if (j.monthVouchers) serverVoucherCache = {
     yCnt: Number(j.monthVouchers.yCnt)||0, yAmt: Number(j.monthVouchers.yAmt)||0,
     bCnt: Number(j.monthVouchers.bCnt)||0, bAmt: Number(j.monthVouchers.bAmt)||0
@@ -418,6 +432,7 @@ async function fetchMonth(ym){
       // populate caches
       serverHoursCache = Number(j.monthHours) || 0;
       serverPurchaseCache = Number(j.monthPurchase) || 0;
+      if (j.monthGuests != null) serverGuestsCache = Number(j.monthGuests) || 0;
       if (j.monthVouchers) serverVoucherCache = {
         yCnt: Number(j.monthVouchers.yCnt)||0, yAmt: Number(j.monthVouchers.yAmt)||0,
         bCnt: Number(j.monthVouchers.bCnt)||0, bAmt: Number(j.monthVouchers.bAmt)||0
@@ -433,6 +448,7 @@ function updateDate(d){
   serverMonthCache = null;
   serverHoursCache = null;
   serverPurchaseCache = null;
+  serverGuestsCache = null;
   serverVoucherCache = null;
   stmtCache = null;
   document.getElementById('dateText').textContent = STATE.roc;
@@ -904,6 +920,7 @@ function recalc(){
   const mv = getMonthVouchers();
   document.getElementById('monthYellow').textContent = serverVoucherCache ? fmtVoucher(mv.yCnt, mv.yAmt) : '--';
   document.getElementById('monthBlue').textContent = serverVoucherCache ? fmtVoucher(mv.bCnt, mv.bAmt) : '--';
+  document.getElementById('monthGuestsSum').textContent = (serverGuestsCache != null) ? (getMonthGuests() + ' 餐') : '--';
   updateStmtUI();
 
   // Day hours = sum of selected persons' worked + OT
@@ -1029,13 +1046,16 @@ function openFixValue(){
     { key:'yellow', label:'🟡 黃券', unit:'張' },
     { key:'blue', label:'🔵 藍券', unit:'張' },
     { key:'purchase', label:'🛒 進貨', unit:'元' },
+    { key:'guests', label:'🍽️ 總餐數', unit:'餐' },
     { key:'hours', label:'⏱️ 工時', unit:'小時' }
   ];
+  const STMT_DISABLED = { hours:1, guests:1 };   // 對帳單不記工時/餐數
   function curVal(){
     if (scope === 'month'){
       if (field==='amt') return serverMonthCache||0;
       if (field==='hours') return serverHoursCache||0;
       if (field==='purchase') return serverPurchaseCache||0;
+      if (field==='guests') return serverGuestsCache||0;
       if (field==='yellow') return (serverVoucherCache&&serverVoucherCache.yCnt)||0;
       if (field==='blue') return (serverVoucherCache&&serverVoucherCache.bCnt)||0;
     } else {
@@ -1082,12 +1102,12 @@ function openFixValue(){
   function paintFields(){
     fieldsBox.innerHTML = '';
     FIELDS.forEach(f=>{
-      const disabled = (scope==='statement' && f.key==='hours');
-      if (disabled && field==='hours') field = 'amt';
+      const disabled = (scope==='statement' && STMT_DISABLED[f.key]);
+      if (disabled && field===f.key) field = 'amt';
       const b = document.createElement('button');
       b.type='button'; b.textContent=f.label; b.dataset.k=f.key;
       b.style.cssText = btnCss + ';font-size:13px;padding:9px 4px';
-      if (disabled){ b.style.opacity='.35'; b.disabled=true; b.title='對帳單不記工時'; }
+      if (disabled){ b.style.opacity='.35'; b.disabled=true; b.title='對帳單不記工時/餐數'; }
       if (f.key===field && !disabled){ b.style.background='var(--gold-soft)'; b.style.borderColor='var(--gold)'; }
       b.addEventListener('click', ()=>{ field=f.key; paintFields(); refreshCur(); });
       fieldsBox.appendChild(b);
@@ -1118,6 +1138,7 @@ function openFixValue(){
       serverMonthCache = Number(j.monthTotal)||0;
       serverHoursCache = Number(j.monthHours)||0;
       serverPurchaseCache = Number(j.monthPurchase)||0;
+      if (j.monthGuests != null) serverGuestsCache = Number(j.monthGuests)||0;
       if (j.monthVouchers) serverVoucherCache = {
         yCnt:Number(j.monthVouchers.yCnt)||0, yAmt:Number(j.monthVouchers.yAmt)||0,
         bCnt:Number(j.monthVouchers.bCnt)||0, bAmt:Number(j.monthVouchers.bAmt)||0 };
@@ -1238,10 +1259,11 @@ function cancelEdit(){
 // 選定舊紀錄 → 回到主畫面、帶回當時所有數據讓使用者重新修改
 function startEditRecord(item){
   const oldV = item.vouchers || {};
+  const oldGuests = (item.meals || []).reduce((s,m)=> s + (Number(m.count)||0), 0);
   editingRecord = {
     id: item.id, ym: STATE.ym, date: item.date,
     oldAmt: Number(item.dayAmt) || 0, oldHours: Number(item.dayHours) || 0,
-    oldPurchase: Number(item.dayPurchase) || 0,
+    oldPurchase: Number(item.dayPurchase) || 0, oldGuests: oldGuests,
     oldYCnt: Number(oldV.yellow && oldV.yellow.count) || 0,
     oldYAmt: Number(oldV.yellow && oldV.yellow.amt) || 0,
     oldBCnt: Number(oldV.blue && oldV.blue.count) || 0,
@@ -1399,6 +1421,7 @@ function collect(){
     guests, atv, meals, persons, dayAmt, monthTotal, dayHours, monthHours,
     vouchers, voucherCnt, voucherAmt, purchases, dayPurchase,
     monthPurchase: getMonthPurchase(),   // 不含當日
+    monthGuests: getMonthGuests(),       // 不含當日（伺服器值；日均餐數用）
     monthVouchers: getMonthVouchers(),   // 不含當日（伺服器值；未部署前為 0）
     statement: getStatement()            // 不含當日（伺服器算 21→20 窗）
   };
@@ -1412,34 +1435,40 @@ function buildText(d){
   lines.push('每日營業狀況⋯⋯⋯⋯');
   lines.push('（1）營業額：' + d.dayAmt);
   lines.push('（2）餐數：' + d.guests);
-  // （3）餐券：只顯示張數，不顯示金額與加總（建全 2026-07-04）
+  // （3）餐券：只顯示張數、無圖示、以「、」分隔（建全 2026-07-04）
   const vParts = [];
   VOUCHERS.forEach(v=>{
     const vd = d.vouchers[v.key] || {};
-    if ((vd.count || 0) > 0) vParts.push(v.emoji + v.label + ' ' + (vd.count||0) + '張');
+    if ((vd.count || 0) > 0) vParts.push(v.label + ' ' + (vd.count||0) + '張');
   });
-  lines.push('（3）餐券：' + (vParts.length ? vParts.join(' ') : '無'));
-  // （4）進貨：圖示後面加品項文字（例 🥬菜500）
-  const P_EMOJI = { veg:'🥬', egg:'🥚', central:'🏭' };
+  lines.push('（3）餐券：' + (vParts.length ? vParts.join('、') : '無'));
+  // （4）進貨：無圖示、品項文字、以「、」分隔（例 菜500、蛋300）
   const P_LABEL = { veg:'菜', egg:'蛋', central:'央廚' };
   const pParts = [];
   ['veg','egg','central'].forEach(k=>{
-    if ((d.purchases[k] || 0) > 0) pParts.push(P_EMOJI[k] + P_LABEL[k] + d.purchases[k]);
+    if ((d.purchases[k] || 0) > 0) pParts.push(P_LABEL[k] + d.purchases[k]);
   });
-  (d.purchases.others || []).forEach(o=>{ if ((o.amt||0) > 0 || o.name) pParts.push('📦' + o.name + o.amt); });
-  lines.push('（4）進貨：' + (pParts.length ? pParts.join(' ') + '（合計 ' + d.dayPurchase + '）' : '無'));
+  (d.purchases.others || []).forEach(o=>{ if ((o.amt||0) > 0 || o.name) pParts.push((o.name||'其他') + o.amt); });
+  lines.push('（4）進貨：' + (pParts.length ? pParts.join('、') + '（合計 ' + d.dayPurchase + '）' : '無'));
   lines.push('（5）工時：' + fmtHr(d.dayHours));
   lines.push('————————————');
   // 當月累計（1號到月底）
   const mv = d.monthVouchers || { yCnt:0, yAmt:0, bCnt:0, bAmt:0 };
   const yv = d.vouchers.yellow || {}, bv = d.vouchers.blue || {};
-  lines.push('當月累計（1號到月底）');
+  lines.push('當月累計⋯⋯⋯⋯');
+  lines.push('（1號到月底）');
   lines.push('');
-  lines.push('💰當月營業額：' + (d.monthTotal + d.dayAmt));
-  lines.push('🟡當月黃券：' + fmtVoucher(mv.yCnt + (yv.count||0), mv.yAmt + (yv.amt||0)));
-  lines.push('🔵當月藍券：' + fmtVoucher(mv.bCnt + (bv.count||0), mv.bAmt + (bv.amt||0)));
-  lines.push('🛒當月進貨：' + (d.monthPurchase + d.dayPurchase));
-  lines.push('⏱️當月工時：' + fmtHr(d.monthHours + d.dayHours));
+  const mAmt = d.monthTotal + d.dayAmt;
+  const mPur = d.monthPurchase + d.dayPurchase;
+  const mGuests = (d.monthGuests || 0) + (d.guests || 0);           // 含今日
+  const dayOfMonth = parseInt(String(d.iso || '').split('-')[2], 10) || 0;  // 天數＝今日日期(1號~最新)
+  lines.push('💰 當月營業額：' + mAmt);
+  lines.push('🟡 當月黃券：' + fmtVoucher(mv.yCnt + (yv.count||0), mv.yAmt + (yv.amt||0)));
+  lines.push('🔵 當月藍券：' + fmtVoucher(mv.bCnt + (bv.count||0), mv.bAmt + (bv.amt||0)));
+  lines.push('🛒 當月進貨：' + mPur);
+  lines.push('⏱️ 當月工時：' + fmtHr(d.monthHours + d.dayHours));
+  lines.push('🍽️ 日均餐數：' + (dayOfMonth > 0 ? Math.round(mGuests / dayOfMonth) : '--'));
+  lines.push('📈 食材佔比：' + (mAmt > 0 ? (Math.round(mPur / mAmt * 1000) / 10).toFixed(1) + '%' : '--'));
   lines.push('');
   lines.push('出勤紀錄⋯⋯⋯⋯⋯');
   const byGroup = {};
@@ -1471,14 +1500,14 @@ function buildText(d){
     });
   });
   lines.push('');
-  lines.push('對帳單累計');
-  lines.push('（本月21號到下月20號）');
+  lines.push('對帳單累計⋯⋯⋯⋯');
+  lines.push('（本月21號到次月20號）');
   lines.push('');
   const s = d.statement || { amt:0, purchase:0, yCnt:0, yAmt:0, bCnt:0, bAmt:0 };
-  lines.push('（1）💰累計營業額：' + (s.amt + d.dayAmt));
-  lines.push('（2）🟡累計黃券：' + fmtVoucher(s.yCnt + (yv.count||0), s.yAmt + (yv.amt||0)));
-  lines.push('（3）🔵累計藍券：' + fmtVoucher(s.bCnt + (bv.count||0), s.bAmt + (bv.amt||0)));
-  lines.push('（4）🛒累計進貨：' + (s.purchase + d.dayPurchase));
+  lines.push('💰 累計營業額：' + (s.amt + d.dayAmt));
+  lines.push('🟡 累計黃券：' + fmtVoucher(s.yCnt + (yv.count||0), s.yAmt + (yv.amt||0)));
+  lines.push('🔵 累計藍券：' + fmtVoucher(s.bCnt + (bv.count||0), s.bAmt + (bv.amt||0)));
+  lines.push('🛒 累計進貨：' + (s.purchase + d.dayPurchase));
   return lines.join('\n');
 }
 
