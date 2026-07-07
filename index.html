@@ -356,6 +356,17 @@ function getMonthGuests(){
   return base;
 }
 
+// === 有回報天數（日均餐數分母；建全 2026-07-07）===
+// 分母 = baseDays(開帳結轉涵蓋天數) + 不重複真實回報日(含今日這筆)
+let serverDatesCache = null;    // array of ISO 回報日 (伺服器；不含今日未送出這筆)
+let serverBaseDaysCache = 0;    // 開帳結轉天數 (如7月=7/1~7/3=3)
+function getReportDays(todayIso){
+  const set = {};
+  (serverDatesCache || []).forEach(function(x){ if (x) set[String(x).slice(0,10)] = 1; });
+  if (todayIso) set[String(todayIso).slice(0,10)] = 1;   // 含今天這筆回報
+  return (serverBaseDaysCache || 0) + Object.keys(set).length;
+}
+
 // === 對帳單累積（本月21號到下月20號；伺服器算，不含今日）===
 let stmtCache = null;   // { amt, purchase, yCnt, yAmt, bCnt, bAmt, label } or null
 function getStatement(){
@@ -395,6 +406,8 @@ function applyServerTotals(j){
   serverHoursCache = Number(j.monthHours) || 0;
   serverPurchaseCache = Number(j.monthPurchase) || 0;
   if (j.monthGuests != null) serverGuestsCache = Number(j.monthGuests) || 0;
+  if (j.monthDates != null) serverDatesCache = j.monthDates || [];
+  if (j.baseDays != null) serverBaseDaysCache = Number(j.baseDays) || 0;
   if (j.monthVouchers) serverVoucherCache = {
     yCnt: Number(j.monthVouchers.yCnt)||0, yAmt: Number(j.monthVouchers.yAmt)||0,
     bCnt: Number(j.monthVouchers.bCnt)||0, bAmt: Number(j.monthVouchers.bAmt)||0
@@ -435,6 +448,8 @@ async function fetchMonth(ym){
       serverHoursCache = Number(j.monthHours) || 0;
       serverPurchaseCache = Number(j.monthPurchase) || 0;
       if (j.monthGuests != null) serverGuestsCache = Number(j.monthGuests) || 0;
+      if (j.monthDates != null) serverDatesCache = j.monthDates || [];
+      if (j.baseDays != null) serverBaseDaysCache = Number(j.baseDays) || 0;
       if (j.monthVouchers) serverVoucherCache = {
         yCnt: Number(j.monthVouchers.yCnt)||0, yAmt: Number(j.monthVouchers.yAmt)||0,
         bCnt: Number(j.monthVouchers.bCnt)||0, bAmt: Number(j.monthVouchers.bAmt)||0
@@ -451,6 +466,8 @@ function updateDate(d){
   serverHoursCache = null;
   serverPurchaseCache = null;
   serverGuestsCache = null;
+  serverDatesCache = null;
+  serverBaseDaysCache = 0;
   serverVoucherCache = null;
   stmtCache = null;
   document.getElementById('dateText').textContent = STATE.roc;
@@ -1147,6 +1164,8 @@ function openFixValue(){
       serverHoursCache = Number(j.monthHours)||0;
       serverPurchaseCache = Number(j.monthPurchase)||0;
       if (j.monthGuests != null) serverGuestsCache = Number(j.monthGuests)||0;
+      if (j.monthDates != null) serverDatesCache = j.monthDates || [];
+      if (j.baseDays != null) serverBaseDaysCache = Number(j.baseDays) || 0;
       if (j.monthVouchers) serverVoucherCache = {
         yCnt:Number(j.monthVouchers.yCnt)||0, yAmt:Number(j.monthVouchers.yAmt)||0,
         bCnt:Number(j.monthVouchers.bCnt)||0, bAmt:Number(j.monthVouchers.bAmt)||0 };
@@ -1472,11 +1491,14 @@ function buildText(d){
   const mAmt = d.monthTotal + d.dayAmt;
   const mPur = d.monthPurchase + d.dayPurchase;
   const mGuests = (d.monthGuests || 0) + (d.guests || 0);           // 含今日
-  const dayOfMonth = parseInt(String(d.iso || '').split('-')[2], 10) || 0;  // 天數＝今日日期(1號~最新)
+  // 日均餐數分母：後端新版有回傳 monthDates → 用「有回報天數」；舊版(未部署)fallback 用日期天數，避免中間態爆數字
+  const denom = (serverDatesCache != null)
+    ? getReportDays(d.iso)                                          // 有回報天數(含今日、排除週末/放假)
+    : (parseInt(String(d.iso || '').split('-')[2], 10) || 0);       // fallback：今日日期(1號~最新)
   lines.push('💰 當月營業額：' + mAmt);
   lines.push('🛒 當月進貨：' + mPur);
   lines.push('⏱️ 當月工時：' + fmtHr(d.monthHours + d.dayHours));
-  lines.push('🍽️ 日均餐數：' + (dayOfMonth > 0 ? Math.round(mGuests / dayOfMonth) : '--'));
+  lines.push('🍽️ 日均餐數：' + (denom > 0 ? Math.round(mGuests / denom) : '--'));
   lines.push('📈 食材佔比：' + (mAmt > 0 ? (Math.round(mPur / mAmt * 1000) / 10).toFixed(1) + '%' : '--'));
   lines.push('');
   lines.push(SECTION_SEP);

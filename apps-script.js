@@ -1,4 +1,4 @@
-// ★ VERSION 2026-07-04d（+ 當月總餐數 monthGuests：由 meals_json 加總、可 adjust 修改；供 LIFF 顯示與日均餐數）
+// ★ VERSION 2026-07-07e（日均餐數改除以「有回報天數」：新增 monthDates 不重複回報日 + baseDays 開帳結轉天數；分母＝baseDays＋Set(monthDates∪今日)）
 /**
  * 業績回報-鴻海 累積 backend (hh-v2 — 建全 2026-07-04 16:09 規格：
  * 餐券改 黃券/藍券 各自張數+金額；當月/對帳單雙軌加總含 營業額/餐券/進貨)
@@ -50,6 +50,7 @@ function ensureTab(ym) {
 
 function emptyTotals_() {
   return { monthTotal: 0, monthHours: 0, monthPurchase: 0, monthGuests: 0,
+           monthDates: [],
            monthVouchers: { yCnt: 0, yAmt: 0, bCnt: 0, bAmt: 0 } };
 }
 
@@ -59,7 +60,21 @@ function monthTotalsFor(ym) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return emptyTotals_();
   const vals = sheet.getRange(2, 8, lastRow - 1, 8).getValues();   // H..O (O=meals_json 用來算餐數)
+  // 日均餐數用「有回報天數」當分母：收集不重複的回報日期（排除 SYSTEM 期初結轉列）
+  const meta = sheet.getRange(2, 4, lastRow - 1, 4).getValues();   // D..G: D ISO日期, E 場域, F 填寫人, G userId
+  const dateSet = {};
+  meta.forEach(function(m) {
+    if (String(m[3]) === 'SYSTEM' || String(m[2]) === '期初結轉') return;   // 結轉列不算一個回報日
+    var iso;
+    if (m[0] instanceof Date) {
+      iso = Utilities.formatDate(m[0], 'GMT+8', 'yyyy-MM-dd');
+    } else {
+      iso = String(m[0] || '').slice(0, 10);
+    }
+    if (iso) dateSet[iso] = 1;
+  });
   const t = emptyTotals_();
+  t.monthDates = Object.keys(dateSet);
   vals.forEach(function(r) {
     t.monthTotal    += Number(r[0]) || 0;   // H
     t.monthHours    += Number(r[1]) || 0;   // I
@@ -140,7 +155,7 @@ function ensureAdjTab_() {
 
 // 回傳某 scope+key 下所有調整聚合值
 function adjMap_(scope, key) {
-  const out = { amt: 0, hours: 0, purchase: 0, guests: 0, yCnt: 0, yAmt: 0, bCnt: 0, bAmt: 0 };
+  const out = { amt: 0, hours: 0, purchase: 0, guests: 0, days: 0, yCnt: 0, yAmt: 0, bCnt: 0, bAmt: 0 };
   const sheet = SpreadsheetApp.getActive().getSheetByName(ADJ_TAB);
   if (!sheet) return out;
   const lastRow = sheet.getLastRow();
@@ -154,6 +169,7 @@ function adjMap_(scope, key) {
     else if (field === 'hours') out.hours += v;
     else if (field === 'purchase') out.purchase += v;
     else if (field === 'guests') out.guests += v;
+    else if (field === 'days') out.days += v;   // 開帳結轉涵蓋的回報天數（日均餐數分母基底）
     else if (field === 'yellow') { out.yCnt += v; out.yAmt += v * VPRICE.yellow; }
     else if (field === 'blue') { out.bCnt += v; out.bAmt += v * VPRICE.blue; }
   });
@@ -256,6 +272,8 @@ function totalsPayload_(ym, extra) {
   out.monthHours = t.monthHours + a.hours;
   out.monthPurchase = t.monthPurchase + a.purchase;
   out.monthGuests = t.monthGuests + a.guests;
+  out.monthDates = t.monthDates;   // 真實回報的不重複日期（前端 Set 併今日算「有回報天數」）
+  out.baseDays = a.days;           // 開帳結轉涵蓋的天數（如7月結轉=7/1~7/3=3天）
   out.monthVouchers = {
     yCnt: t.monthVouchers.yCnt + a.yCnt, yAmt: t.monthVouchers.yAmt + a.yAmt,
     bCnt: t.monthVouchers.bCnt + a.bCnt, bAmt: t.monthVouchers.bAmt + a.bAmt
