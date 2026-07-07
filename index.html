@@ -326,6 +326,7 @@ let STATE = rocFromDate(new Date());
 let MONTH_KEY = "monthly_total_" + STATE.ym;
 let serverMonthCache = null;  // latest fetched server month total (null = unknown / use local fallback)
 let statsLoading = false;     // 建全 2026-07-07: 當月/對帳單統計讀取中 → 送出鈕反灰不可按，讀完才恢復
+let loadSeq = 0;              // 建全 2026-07-08: 每次載入(換日期/boot)遞增；防「過期的載入回應」覆寫最新資料造成提早解鎖
 // 修改前一筆 (edit mode): 選定舊紀錄後存 { id, ym, date, oldAmt, oldHours }，送出時「送新＋刪舊」取代
 let editingRecord = null;
 function getMonth(){
@@ -384,12 +385,14 @@ function getStatement(){
     label: s.label
   };
 }
-async function fetchStatement(iso){
+async function fetchStatement(iso, seq){
   if (!WEBHOOK_URL) return;
   try{
     const r = await fetch(`${WEBHOOK_URL}?action=statement&date=${encodeURIComponent(iso)}`, { method:'GET' });
     const j = await r.json();
     if (j.ok){
+      // 建全 2026-07-08: 若已有更新的載入啟動(seq 落後)，這是過期回應→不覆寫 stmtCache
+      if (seq != null && seq !== loadSeq) return;
       stmtCache = {
         amt: Number(j.amt)||0, purchase: Number(j.purchase)||0,
         yCnt: Number(j.yCnt)||0, yAmt: Number(j.yAmt)||0,
@@ -476,12 +479,14 @@ function updateDate(d){
   const di = document.getElementById('dateInput');
   if (di) di.value = STATE.iso;
   // Refresh server month + statement（讀取期間鎖住送出鈕，讀完自動恢復）
+  // 建全 2026-07-08: 「當月」與「對帳單」兩支各自到齊才解鎖；loadSeq 防過期載入提早解鎖
+  const myseq = ++loadSeq;
   statsLoading = true;
   try { validate(); } catch(_) {}
   Promise.all([
-    fetchMonth(STATE.ym).then(v=>{ if (v != null) serverMonthCache = v; }),
-    fetchStatement(STATE.iso)
-  ]).finally(()=>{ statsLoading = false; recalc(); try { validate(); } catch(_) {} });
+    fetchMonth(STATE.ym).then(v=>{ if (v != null && myseq === loadSeq) serverMonthCache = v; }),
+    fetchStatement(STATE.iso, myseq)
+  ]).finally(()=>{ if (myseq === loadSeq){ statsLoading = false; recalc(); try { validate(); } catch(_) {} } });
   recalc();
 }
 
@@ -603,12 +608,13 @@ async function boot(){
   renderPersons();
   attachHandlers();
   // Fetch current month total + statement from server（讀取期間鎖住送出鈕）
+  const bootSeq = ++loadSeq;
   statsLoading = true;
   try { validate(); } catch(_) {}
   await Promise.all([
-    fetchMonth(STATE.ym).then(v=>{ if (v != null) serverMonthCache = v; }),
-    fetchStatement(STATE.iso)
-  ]).finally(()=>{ statsLoading = false; });
+    fetchMonth(STATE.ym).then(v=>{ if (v != null && bootSeq === loadSeq) serverMonthCache = v; }),
+    fetchStatement(STATE.iso, bootSeq)
+  ]).finally(()=>{ if (bootSeq === loadSeq) statsLoading = false; });
   // Use recalc to update BOTH monthSum and monthHoursSum (bug fix v15)
   recalc();
   try { validate(); } catch(_) {}
@@ -982,8 +988,10 @@ function refreshMonthly(){
 
 function validate(){
   const btn = document.getElementById('btnSubmit');
-  // 建全 2026-07-07: 統計讀取中 → 完全反灰不可按（避免讀取空窗誤送/重複回報）
-  if (statsLoading){
+  // 建全 2026-07-08: 送出鈕必須「當月累積」+「對帳單累積」兩份真值都讀到才解鎖。
+  // 任一支還沒讀到(cache 為 null) → 一律反灰；不再只靠 statsLoading 旗標(會被過期載入提早清掉)。
+  // 有後端(WEBHOOK_URL)時才強制此鎖；無後端的本地/開發情境維持舊行為。
+  if (statsLoading || (WEBHOOK_URL && (serverMonthCache == null || stmtCache == null))){
     btn.disabled = true;
     btn.textContent = "⏳ 讀取當月累積中…";
     return;
