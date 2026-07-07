@@ -1,4 +1,4 @@
-// ★ VERSION 2026-07-07e（日均餐數改除以「有回報天數」：新增 monthDates 不重複回報日 + baseDays 開帳結轉天數；分母＝baseDays＋Set(monthDates∪今日)）
+// ★ VERSION 2026-07-07f（日均餐數改除以「有回報天數」：新增 monthDates 不重複回報日 + baseDays 開帳結轉天數；分母＝baseDays＋Set(monthDates∪今日)；f修正D欄Date型別解析）
 /**
  * 業績回報-鴻海 累積 backend (hh-v2 — 建全 2026-07-04 16:09 規格：
  * 餐券改 黃券/藍券 各自張數+金額；當月/對帳單雙軌加總含 營業額/餐券/進貨)
@@ -48,6 +48,21 @@ function ensureTab(ym) {
   return sheet;
 }
 
+// 把 D 欄的值轉成 yyyy-MM-dd。⚠️ Apps Script 的 getValues() 有時回 Date 物件、有時回字串，
+// 且 `instanceof Date` 在 Apps Script 不可靠（已實測踩過），改用 duck-typing 判斷。
+function isoFromCell_(v) {
+  if (v == null || v === '') return '';
+  if (typeof v.getFullYear === 'function') {              // Date-like
+    return Utilities.formatDate(v, 'GMT+8', 'yyyy-MM-dd');
+  }
+  var s = String(v);
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);            // 已是 ISO 字串
+  if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  var d = new Date(s);                                    // 保險：其他可解析格式
+  if (!isNaN(d.getTime())) return Utilities.formatDate(d, 'GMT+8', 'yyyy-MM-dd');
+  return s.slice(0, 10);
+}
+
 function emptyTotals_() {
   return { monthTotal: 0, monthHours: 0, monthPurchase: 0, monthGuests: 0,
            monthDates: [],
@@ -65,12 +80,7 @@ function monthTotalsFor(ym) {
   const dateSet = {};
   meta.forEach(function(m) {
     if (String(m[3]) === 'SYSTEM' || String(m[2]) === '期初結轉') return;   // 結轉列不算一個回報日
-    var iso;
-    if (m[0] instanceof Date) {
-      iso = Utilities.formatDate(m[0], 'GMT+8', 'yyyy-MM-dd');
-    } else {
-      iso = String(m[0] || '').slice(0, 10);
-    }
+    var iso = isoFromCell_(m[0]);
     if (iso) dateSet[iso] = 1;
   });
   const t = emptyTotals_();
