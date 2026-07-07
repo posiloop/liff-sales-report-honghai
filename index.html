@@ -325,6 +325,7 @@ function fmtHr(v){
 let STATE = rocFromDate(new Date());
 let MONTH_KEY = "monthly_total_" + STATE.ym;
 let serverMonthCache = null;  // latest fetched server month total (null = unknown / use local fallback)
+let statsLoading = false;     // 建全 2026-07-07: 當月/對帳單統計讀取中 → 送出鈕反灰不可按，讀完才恢復
 // 修改前一筆 (edit mode): 選定舊紀錄後存 { id, ym, date, oldAmt, oldHours }，送出時「送新＋刪舊」取代
 let editingRecord = null;
 function getMonth(){
@@ -474,9 +475,13 @@ function updateDate(d){
   document.getElementById('hdrSub').textContent = STATE.roc;
   const di = document.getElementById('dateInput');
   if (di) di.value = STATE.iso;
-  // Refresh server month + statement
-  fetchMonth(STATE.ym).then(v=>{ if (v != null) serverMonthCache = v; recalc(); });
-  fetchStatement(STATE.iso);
+  // Refresh server month + statement（讀取期間鎖住送出鈕，讀完自動恢復）
+  statsLoading = true;
+  try { validate(); } catch(_) {}
+  Promise.all([
+    fetchMonth(STATE.ym).then(v=>{ if (v != null) serverMonthCache = v; }),
+    fetchStatement(STATE.iso)
+  ]).finally(()=>{ statsLoading = false; recalc(); try { validate(); } catch(_) {} });
   recalc();
 }
 
@@ -597,12 +602,16 @@ async function boot(){
   renderMeals();
   renderPersons();
   attachHandlers();
-  // Fetch current month total + statement from server (if WEBHOOK_URL configured)
-  const v = await fetchMonth(STATE.ym);
-  if (v != null) { serverMonthCache = v; }
-  fetchStatement(STATE.iso);
+  // Fetch current month total + statement from server（讀取期間鎖住送出鈕）
+  statsLoading = true;
+  try { validate(); } catch(_) {}
+  await Promise.all([
+    fetchMonth(STATE.ym).then(v=>{ if (v != null) serverMonthCache = v; }),
+    fetchStatement(STATE.iso)
+  ]).finally(()=>{ statsLoading = false; });
   // Use recalc to update BOTH monthSum and monthHoursSum (bug fix v15)
   recalc();
+  try { validate(); } catch(_) {}
 }
 
 async function initLiff(){
@@ -973,6 +982,12 @@ function refreshMonthly(){
 
 function validate(){
   const btn = document.getElementById('btnSubmit');
+  // 建全 2026-07-07: 統計讀取中 → 完全反灰不可按（避免讀取空窗誤送/重複回報）
+  if (statsLoading){
+    btn.disabled = true;
+    btn.textContent = "⏳ 讀取當月累積中…";
+    return;
+  }
   const anyMeal = document.querySelectorAll('.meal-tile.on').length > 0;
   const anyPerson = document.querySelectorAll('.person-tile.on').length > 0;
   if (anyMeal && anyPerson){
