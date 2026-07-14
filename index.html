@@ -385,11 +385,23 @@ function getStatement(){
     label: s.label
   };
 }
+// 建全 2026-07-14: 帶 timeout 的 GET(AbortController)，避免 Apps Script 冷啟/網路慢時請求
+// 永遠 hang 住→整個載入卡在「⏳讀取當月累積中…」→使用者被迫重新進入。逾時即 abort，交給背景自動重試。
+function sleep(ms){ return new Promise(function(res){ setTimeout(res, ms); }); }
+function fetchJSON(url, timeoutMs){
+  timeoutMs = timeoutMs || 12000;
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var t = ctrl ? setTimeout(function(){ try{ ctrl.abort(); }catch(_){} }, timeoutMs) : null;
+  var opt = { method:'GET', cache:'no-store' };
+  if (ctrl) opt.signal = ctrl.signal;
+  return fetch(url, opt)
+    .then(function(r){ return r.json(); })
+    .finally(function(){ if (t) clearTimeout(t); });
+}
 async function fetchStatement(iso, seq){
   if (!WEBHOOK_URL) return;
   try{
-    const r = await fetch(`${WEBHOOK_URL}?action=statement&date=${encodeURIComponent(iso)}`, { method:'GET' });
-    const j = await r.json();
+    const j = await fetchJSON(`${WEBHOOK_URL}?action=statement&date=${encodeURIComponent(iso)}`);
     if (j.ok){
       // 建全 2026-07-08: 若已有更新的載入啟動(seq 落後)，這是過期回應→不覆寫 stmtCache
       if (seq != null && seq !== loadSeq) return;
@@ -445,8 +457,7 @@ function getMonthVouchers(){
 async function fetchMonth(ym){
   if (!WEBHOOK_URL) return null;   // fallback localStorage
   try{
-    const r = await fetch(`${WEBHOOK_URL}?ym=${encodeURIComponent(ym)}`, { method:'GET' });
-    const j = await r.json();
+    const j = await fetchJSON(`${WEBHOOK_URL}?ym=${encodeURIComponent(ym)}`);
     if (j.ok){
       // populate caches
       serverHoursCache = Number(j.monthHours) || 0;
@@ -463,6 +474,29 @@ async function fetchMonth(ym){
     return null;
   } catch(e){ console.warn('fetchMonth failed', e); return null; }
 }
+// 載入「當月」+「對帳單」兩份累積；讀取期間鎖住送出鈕，讀完自動恢復。
+// 建全 2026-07-08: 兩支各自到齊才解鎖；loadSeq 防過期載入提早解鎖。
+// 建全 2026-07-14: 任一份讀取失敗/逾時 → 每 4 秒背景自動重試(免使用者重新進入)，直到都讀到為止。
+let loadRetryTimer = null;
+function loadServerTotals(){
+  const myseq = ++loadSeq;
+  statsLoading = true;
+  if (loadRetryTimer){ clearTimeout(loadRetryTimer); loadRetryTimer = null; }
+  try { validate(); } catch(_) {}
+  return Promise.all([
+    fetchMonth(STATE.ym).then(v=>{ if (v != null && myseq === loadSeq) serverMonthCache = v; }),
+    fetchStatement(STATE.iso, myseq)
+  ]).finally(()=>{
+    if (myseq !== loadSeq) return;   // 已被更新的載入取代
+    statsLoading = false;
+    try { recalc(); } catch(_) {}
+    try { validate(); } catch(_) {}
+    // 自我修復：任一份還沒讀到 → 背景排程重試，使用者不必重新進入 LIFF
+    if (WEBHOOK_URL && (serverMonthCache == null || stmtCache == null)){
+      loadRetryTimer = setTimeout(function(){ if (myseq === loadSeq) loadServerTotals(); }, 4000);
+    }
+  });
+}
 function updateDate(d){
   STATE = rocFromDate(d);
   MONTH_KEY = "monthly_total_" + STATE.ym;
@@ -478,15 +512,7 @@ function updateDate(d){
   document.getElementById('hdrSub').textContent = STATE.roc;
   const di = document.getElementById('dateInput');
   if (di) di.value = STATE.iso;
-  // Refresh server month + statement（讀取期間鎖住送出鈕，讀完自動恢復）
-  // 建全 2026-07-08: 「當月」與「對帳單」兩支各自到齊才解鎖；loadSeq 防過期載入提早解鎖
-  const myseq = ++loadSeq;
-  statsLoading = true;
-  try { validate(); } catch(_) {}
-  Promise.all([
-    fetchMonth(STATE.ym).then(v=>{ if (v != null && myseq === loadSeq) serverMonthCache = v; }),
-    fetchStatement(STATE.iso, myseq)
-  ]).finally(()=>{ if (myseq === loadSeq){ statsLoading = false; recalc(); try { validate(); } catch(_) {} } });
+  loadServerTotals();
   recalc();
 }
 
@@ -603,18 +629,14 @@ function showDupOtherWarning(dateStr, dupItem){
 async function boot(){
   document.getElementById('dateText').textContent = STATE.roc;
   document.getElementById('hdrSub').textContent = STATE.roc;
+  // 建全 2026-07-14: 伺服器累積的讀取不依賴 LIFF profile / employees，
+  // 提前與 initLiff/loadEmployees 並行啟動，把 Apps Script 往返時間藏在初始化裡→整體更快。
+  const totalsP = loadServerTotals();
   await Promise.all([initLiff(), loadEmployees()]);
   renderMeals();
   renderPersons();
   attachHandlers();
-  // Fetch current month total + statement from server（讀取期間鎖住送出鈕）
-  const bootSeq = ++loadSeq;
-  statsLoading = true;
-  try { validate(); } catch(_) {}
-  await Promise.all([
-    fetchMonth(STATE.ym).then(v=>{ if (v != null && bootSeq === loadSeq) serverMonthCache = v; }),
-    fetchStatement(STATE.iso, bootSeq)
-  ]).finally(()=>{ if (bootSeq === loadSeq) statsLoading = false; });
+  await totalsP;
   // Use recalc to update BOTH monthSum and monthHoursSum (bug fix v15)
   recalc();
   try { validate(); } catch(_) {}
@@ -1518,10 +1540,14 @@ function buildText(d){
   const denom = (serverDatesCache != null)
     ? getReportDays(d.iso)                                          // 有回報天數(含今日、排除週末/放假)
     : (parseInt(String(d.iso || '').split('-')[2], 10) || 0);       // fallback：今日日期(1號~最新)
+  // 日均餐數分子改為「總餐數 + 黃券張數 + 藍券張數」(當月，皆含今日)（建全 2026-07-14）
+  const mYCnt = (mv.yCnt || 0) + (yv.count || 0);                   // 當月黃券張數(含今日)
+  const mBCnt = (mv.bCnt || 0) + (bv.count || 0);                   // 當月藍券張數(含今日)
+  const avgMealsNum = mGuests + mYCnt + mBCnt;
   lines.push('💰 當月營業額：' + mAmt);
   lines.push('🛒 當月進貨：' + mPur);
   lines.push('⏱️ 當月工時：' + fmtHr(d.monthHours + d.dayHours));
-  lines.push('🍽️ 日均餐數：' + (denom > 0 ? Math.round(mGuests / denom) : '--'));
+  lines.push('🍽️ 日均餐數：' + (denom > 0 ? Math.round(avgMealsNum / denom) : '--'));
   lines.push('📈 食材佔比：' + (mAmt > 0 ? (Math.round(mPur / mAmt * 1000) / 10).toFixed(1) + '%' : '--'));
   lines.push('');
   lines.push(SECTION_SEP);
