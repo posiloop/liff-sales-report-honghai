@@ -1601,7 +1601,10 @@ async function submit(){
   // v39 (建全): 送出期間鎖住按鈕+反灰讀秒，避免處理延遲那幾秒被重複點擊造成重複回報
   if (btnS){ btnS.disabled = true; btnS.textContent = "⏳ 送出中…請勿重複點擊"; }
   try{
-    const d = collect();
+    // v46 fix (建全 2026-08-12，中科 15B 實撞後同步修鴻海)：collect() **必須放在下面補讀累積之後**。
+    //   舊版先 collect() 等於把「當月累積」快照下來；v45 的補讀補回 serverMonthCache、recalc() 也更新了畫面，
+    //   但**沒有重做快照**，而貼進 LINE 的文字是用快照做的 → 累積讀完前送出，訊息印成「當日值 + 0」。
+    //   ⚠️ 不要把 collect() 移回上面。
     // v38 (建全): 送出前確認 LIFF access token 有效，缺失/過期就先重新登入，避免 sendMessages 報 UNAUTHORIZED；放在寫入前→不會重複列
     if (!liff || !liff.isLoggedIn || !liff.isLoggedIn() || !liff.getAccessToken || !liff.getAccessToken()){
       errBox.textContent = "LINE 登入狀態已失效，正在重新登入…完成後請再按一次送出。";
@@ -1620,6 +1623,8 @@ async function submit(){
       restoreBtn();
       return;
     }
+    // v46: 快照在這裡才做——上面已確定 serverMonthCache / stmtCache 是後端真值。
+    const d = collect();
     // 0) 同日重複檢查 (建全；v43 改全站跨人)：userId 留空→後端回傳全站當月所有人，才抓得到別人報過的同一天(每日一筆全店)
     if (WEBHOOK_URL){
       try{
